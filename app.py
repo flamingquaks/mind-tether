@@ -3,11 +3,11 @@ import os
 
 import aws_cdk as cdk
 
-from phone_background_helper.phone_background_helper_stack import PhoneBackgroundHelperStack
+from app_cdk.phone_background_helper_stack import PhoneBackgroundHelperStack
 
 
 app = cdk.App()
-PhoneBackgroundHelperStack(app, "PhoneBackgroundHelperStack",
+PhoneBackgroundHelperStack(app, "PhoneBackgroundHelperStack"
     # If you don't specify 'env', this stack will be environment-agnostic.
     # Account/Region-dependent features and context lookups will not work,
     # but a single synthesized template can be deployed anywhere.
@@ -23,6 +23,7 @@ PhoneBackgroundHelperStack(app, "PhoneBackgroundHelperStack",
     #env=cdk.Environment(account='123456789012', region='us-east-1'),
 
     # For more information, see https://docs.aws.amazon.com/cdk/latest/guide/environments.html
+    
     )
 
 app.synth()
