@@ -13,33 +13,9 @@ import os
 from io import BytesIO
 from uuid import uuid4
 
-days= dict({
-    'sunday' :{
-        'color': (165,209,200)
-    },
-    'monday':{
-        'color': (242,212,213) 
-    },
-    'tuesday':{
-        'color': (238,231,184)
-    },
-    'wednesday':{
-        'color': (241,139,132)
-    },
-    'thursday':{
-        'color': (168,206,215)
-    },
-    'friday':{
-        'color': (234,195,138)
-    },
-    'saturday':{
-        'color': (183,181,204)
-    }
-})
 
 def upload_image_to_s3 (uuid_path, img):
-    # bucket_name = os.environ['S3_BUCKET']
-    bucket_name="phonebackgroundhelperstack-assetbucket1d025086-q1yucn7kpzas"
+    bucket_name = os.environ['S3_BUCKET']
     s3 = boto3.client("s3")
     s3_response = s3.put_object(Bucket=bucket_name,
                   Key=uuid_path,
@@ -59,7 +35,7 @@ def _get_base_day_image(day: str, phone_model: str):
 def _generate_day_text_image(day:str, background: Image):
     fnt = ImageFont.truetype("/opt/fonts/theboldfont.ttf", 200)
     draw = ImageDraw.Draw(background,"RGB")
-    draw.text((25,2000),day.capitalize(),fill=(255,255,255), font=fnt)
+    draw.text((100,1700),day.capitalize(),fill=(255,255,255), font=fnt)
     return background
 
 def generate_image(*args, day:str=None, phone_model:str=None):
@@ -68,7 +44,6 @@ def generate_image(*args, day:str=None, phone_model:str=None):
     return background
 
 def shorten_url(img_url:str):
-    # print("IMAGE URL IS\n %s" % (img_url))
     response = requests.post("https://link.mindtether.rudy.fyi/admin_shrink_url",
     json={
         "url_long": img_url,
@@ -83,7 +58,6 @@ def shorten_url(img_url:str):
         return response.status_code
 
 def lambda_handler(event, context):
-    print("EVENT object = %s" % (event))
     phone_model="iphone13pro"
     width = 1170
     height = 2532
@@ -97,10 +71,16 @@ def lambda_handler(event, context):
     buffer.seek(0)
     image_url = upload_image_to_s3(uuid_path, buffer)
     image_url = shorten_url(image_url)
+    body_data = {
+        "image_url": image_url
+    }
     return {
+        'isBase64Encoded': False,
+        'headers': {
+          'Access-Control-Allow-Origin': "*",
+          'Content-Type': 'application/json' 
+        },
         'statusCode': 200,
-        'body': {
-            'image_url': image_url
-        }
+        'body': json.dumps(body_data)
     }
     
