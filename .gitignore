@@ -11,3 +11,6 @@ cdk.out
 template.yaml
 .aws-sam
 .venv/pyvenv.cfg
+.DS_Store
+.vscode
+cdk.out

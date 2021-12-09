@@ -23,13 +23,13 @@ class PhoneBackgroundHelperStack(Stack):
         # s3_deployment.BucketDeployment(self,"DeployAssets", 
         #                                sources=[s3_deployment.Source.asset("assets")],
         #                                destination_bucket=asset_bucket)
-        
+        asset_bucket.lifecycleRules = [s3.LifecycleRule(
+            enabled=True,
+            expiration=Duration.minutes(1)
+        )]
         api = apigw.RestApi(self, "PhoneBackgroundHelperAPI")
-        
-        # lambda_bundling = BundlingOptions
-        # lambda_bundling.command = "pip install -r requirements.txt"
-        # lambda_bundling.image = _lambda.Runtime.bundling_image
-        
+        # api.deployment_stage = apigw.Stage(self,"v1",deployment=apigw.Deployment(self,"Prod"), stage_name="v1", api=api)
+
         generate_helper_image_lambda = _lambda.Function(self,
                                                         "GenerateHelperImage",
                                                         runtime=_lambda.Runtime.PYTHON_3_8,
@@ -40,11 +40,13 @@ class PhoneBackgroundHelperStack(Stack):
                                                         timeout=Duration.seconds(60)
                                                         )
         
-        # generate_helper_image_lambda.add_layers(_lambda.LayerVersion(
-        #     self, 'asset-layer', code=_lambda.Code.from_asset("assets")
-        # ))
+        generate_helper_image_lambda.add_layers(_lambda.LayerVersion(
+            self, 'asset-layer', code=_lambda.Code.from_asset("assets")
+        ))
         
         generate_helper_image_lambda.add_environment("S3_BUCKET", asset_bucket.bucket_name)
+        generate_helper_image_lambda.add_environment("SHORTENER_URL","https://link.mindtether.rudy.fyi/admin_shrink_url")
+        generate_helper_image_lambda.add_environment("CDN_PREFIX","link.mindtether.rudy.fyi")
                 
         asset_bucket.grant_read(generate_helper_image_lambda)
         asset_bucket.grant_write(generate_helper_image_lambda)
