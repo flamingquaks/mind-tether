@@ -18,6 +18,22 @@
     "@aws-cdk-lib/aws-apigateway:usagePlanKeyOrderInsensitiveId": true,
     "@aws-cdk-lib/aws-rds:lowercaseDbIdentifier": true,
     "@aws-cdk-lib/aws-lambda:recognizeVersionProps": true,
-    "@aws-cdk-lib/aws-cloudfront:defaultSecurityPolicyTLSv1.2_2021": true
+    "@aws-cdk-lib/aws-cloudfront:defaultSecurityPolicyTLSv1.2_2021": true,
+
+    "prod":{
+      "@aws-cdk-lib/aws-apigateway:usagePlanKeyOrderInsensitiveId": true,
+      "@aws-cdk-lib/aws-rds:lowercaseDbIdentifier": true,
+      "@aws-cdk-lib/aws-lambda:recognizeVersionProps": true,
+      "@aws-cdk-lib/aws-cloudfront:defaultSecurityPolicyTLSv1.2_2021": true,
+      "stage": "v1"
+    },
+    "dev":{
+      "@aws-cdk-lib/aws-apigateway:usagePlanKeyOrderInsensitiveId": true,
+      "@aws-cdk-lib/aws-rds:lowercaseDbIdentifier": true,
+      "@aws-cdk-lib/aws-lambda:recognizeVersionProps": true,
+      "@aws-cdk-lib/aws-cloudfront:defaultSecurityPolicyTLSv1.2_2021": true,
+      "stage": "dev"
+    }
+    
   }
 }
