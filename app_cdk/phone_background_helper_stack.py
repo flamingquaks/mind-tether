@@ -47,13 +47,13 @@ class PhoneBackgroundHelperStack(Stack):
                                                         )
         
         generate_helper_image_lambda.add_layers(_lambda.LayerVersion(
-            self, 'asset-layer-images', code=_lambda.Code.from_asset("assets/images"),
-            layer_version_name="asset-layer-images"
+            self, 'asset-layer', code=_lambda.Code.from_asset("lambda_layers/mindtether_assets"),
+            layer_version_name="asset-layer"
         ))
         
         generate_helper_image_lambda.add_layers(_lambda.LayerVersion(
-            self, "asset-layer-text", code=_lambda.Code.from_asset("assets/text"),
-            layer_version_name="asset-layer-text"
+            self, "mindtether_core", code=_lambda.Code.from_asset("lambda_layers/mindtether_core"),
+            layer_version_name="mindtether_core-layer"
         ))
         
         generate_helper_image_lambda.add_environment("S3_BUCKET", asset_bucket.bucket_name)
