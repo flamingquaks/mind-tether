@@ -1,7 +1,9 @@
 
 # Siri Shortcut
+The Production version of MindTether siri shortcut is hosted on RoutineHub.
+You can find the latest version from your computer, tablet or phone by heading over to
+https://routinehub.co/shortcut/10648/. 
 
-This application functions using a Siri Shortcut that operates on a schedule. 
 
-Access the shortcut here:
-https://www.icloud.com/shortcuts/cfe2f702da584632a611837a54fcc75f 
+Latest Beta version of the Shortcut:
+**N/A**
