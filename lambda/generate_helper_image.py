@@ -33,7 +33,7 @@ def _get_base_day_image(day: str, phone_model: str):
     return Image.open("/opt/images/daily_background/%s@%s.jpg" % (day,phone_model))
 
 def _generate_day_text_image(day:str, background: Image):
-    fnt = ImageFont.truetype("/opt/fonts/theboldfont.ttf", 200)
+    fnt = ImageFont.truetype("/opt/text/fonts/theboldfont.ttf", 200)
     draw = ImageDraw.Draw(background,"RGB")
     draw.text((100,1700),day.capitalize(),fill=(255,255,255), font=fnt)
     return background
