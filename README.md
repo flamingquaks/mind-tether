@@ -1,10 +1,12 @@
 
 # Mind Tether
 
-Mind Tether is an app designed to provide small reminders that can help you feel more tethered to reality when remembering is a challenge. 
+Many individuals in many stages of life struggle to stay grounded to the day to day. Whether it's pain or medication induced brain fog, damensia, or a multide of ther things, keeping oneself connected to each day can be an uphill battle.
+
+Mind Tether is designed to provide users with visual indicators in convienient locations to help mentally tether someone back to what the now is.
 
 
-The current design will take advantage of the programability of iPhones through Shortcuts. The shortcut will be created and set to run on a schedule. It will have dynamic variables it will pass. In AWS, a unique phone background image is created, saved in S3 and a pre-signed URL is generated. The shortcut will then download the file from the provided background URL. The S3 lifecycle policies will expire images after 60 seconds. 
+The current design MVP takes advantage of the programability of iPhones through Shortcuts. See [SiriShortcut.md](SiriShortcut.md) for the latest released version of the shortcut. It will have dynamic variables it will pass. In AWS, a unique phone background image is created, saved in S3 and a pre-signed URL is generated. The shortcut will then download the file from the provided background URL. The S3 lifecycle policies will expire images after 60 seconds. 
 
 --- 
 
