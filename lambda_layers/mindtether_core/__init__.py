@@ -1,6 +1,6 @@
 import os
 
-class ResourceType:
+class MindTetherResources:
     
     
     
@@ -10,4 +10,5 @@ class ResourceType:
     def Asset():
         def FONT():
             THE_BOLD_FONT = "fonts/theboldfont.ttf"    
+    
     

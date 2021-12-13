@@ -1,3 +1,4 @@
+import requests
 import wikipedia
 
 def lambda_handler(event,context):
