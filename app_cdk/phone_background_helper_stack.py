@@ -35,29 +35,29 @@ class PhoneBackgroundHelperStack(Stack):
         api.deployment_stage = apigw.Stage(self,stage_name, deployment=api_deployment,stage_name=stage_name)
         
         #Create the Lambda Layers
-        asset_layer = _lambda.LayerVersion(
-            self, 'asset-layer', code=_lambda.Code.from_asset("lambda_layers/mindtether_assets"),
-            layer_version_name="asset-layer"
+        mindtether_assets = _lambda.LayerVersion(
+            self, 'mindtether_assets', code=_lambda.Code.from_asset("lambda_layers/mindtether_assets_layer"),
+            layer_version_name="mindtether_assets"
         )
         
         mindtether_core = _lambda.LayerVersion(
             self, "mindtether_core", code=_lambda.Code.from_asset("lambda_layers/mindtether_core"),
-            layer_version_name="mindtether_core-layer"
+            layer_version_name="mindtether_core"
         )
         ## Lambda:GenerateHelperImage - Define Function
         generate_helper_image_lambda = _lambda.Function(self,
                                                         "GenerateHelperImage",
                                                         runtime=_lambda.Runtime.PYTHON_3_8,
                                                         code=_lambda.Code.from_asset(path="lambda/generate_helper_image", bundling=BundlingOptions(
-                                                            command=["bash", "-c", "mkdir cache && pip install -r requirements.txt -t /asset-output --cache-dir ./cache && cp -au . /asset-output"],
+                                                            command=["bash", "-c", "pip install -r requirements.txt -t /asset-output --cache-dir /tmp && cp -au . /asset-output"],
                                                             image=_lambda.Runtime.PYTHON_3_8.bundling_image)),
-                                                        handler='lambda_handler',
+                                                        handler='app.lambda_handler',
                                                         timeout=Duration.seconds(60)
                                                         )
         
         ## Lambda:GenerateHelperImage - Add Lambda Layers
-        generate_helper_image_lambda.add_layers(asset_layer)
-        generate_helper_image_lambda.add_layers(mindtether_core)
+        generate_helper_image_lambda.add_layers(mindtether_assets)
+        # generate_helper_image_lambda.add_layers(mindtether_core)
         
         ## Lambda:GenerateHelperImage - Add Environment Variables
         generate_helper_image_lambda.add_environment("S3_BUCKET", asset_bucket.bucket_name)
