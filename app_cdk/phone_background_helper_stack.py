@@ -48,7 +48,7 @@ class PhoneBackgroundHelperStack(Stack):
         generate_helper_image_lambda = _lambda.Function(self,
                                                         "GenerateHelperImage",
                                                         runtime=_lambda.Runtime.PYTHON_3_8,
-                                                        code=_lambda.Code.from_asset(path="lambda/generate_helper_image", bundling=BundlingOptions(
+                                                        code=_lambda.Code.from_asset(path="lambda/v1/generate_helper_image", bundling=BundlingOptions(
                                                             command=["bash", "-c", "pip install -r requirements.txt -t /asset-output --cache-dir /tmp && cp -au . /asset-output"],
                                                             image=_lambda.Runtime.PYTHON_3_8.bundling_image)),
                                                         handler='app.lambda_handler',
@@ -81,19 +81,19 @@ class PhoneBackgroundHelperStack(Stack):
             shortener_bucket = s3.Bucket(self,"URLShortnerBucket")
             shortener_bucket.add_lifecycle_rule(self,enabled=True,expiration=Duration.minutes(5))
             
-            ## URLShortener:LambdaShortener
-            url_shortener_lambda = _lambda.Function(self,
-                                                    "ShortenURL",
-                                                    runtime=_lambda.Runtime.PYTHON_3_8,
-                                                    code=_lambda.Code.from_asset(path="lambda/shorten_url", bundling=BundlingOptions(
-                                                        command=["bash", "-c", "pip install -r requirements.txt -t /asset-output && cp -au . /asset-output"],
-                                                        image=_lambda.Runtime.PYTHON_3_8.bundling_image)),
-                                                    handler="lambda_handler",
-                                                    timeout=Duration.seconds(30)
+            # ## URLShortener:LambdaShortener
+            # url_shortener_lambda = _lambda.Function(self,
+            #                                         "ShortenURL",
+            #                                         runtime=_lambda.Runtime.PYTHON_3_8,
+            #                                         code=_lambda.Code.from_asset(path="lambda/shorten_url", bundling=BundlingOptions(
+            #                                             command=["bash", "-c", "pip install -r requirements.txt -t /asset-output && cp -au . /asset-output"],
+            #                                             image=_lambda.Runtime.PYTHON_3_8.bundling_image)),
+            #                                         handler="lambda_handler",
+            #                                         timeout=Duration.seconds(30)
                                                                 
-            )    
+            # )    
 
-            shortener_bucket.grant_read_write(url_shortener_lambda)
+            # shortener_bucket.grant_read_write(url_shortener_lambda)
         
         # Version based on context
         if deployment_environment['stage'] == "prod":
