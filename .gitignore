@@ -1,0 +1,18 @@
+*.swp
+package-lock.json
+__pycache__
+.pytest_cache
+.venv
+*.egg-info
+
+# CDK asset staging directory
+.cdk.staging
+cdk.out
+template.yaml
+.aws-sam
+.venv/pyvenv.cfg
+.DS_Store
+.vscode
+cdk.out
+aws/dist
+workspace.code-workspace
