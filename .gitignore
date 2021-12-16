@@ -16,3 +16,4 @@ template.yaml
 cdk.out
 aws/dist
 workspace.code-workspace
+private-todo.md
