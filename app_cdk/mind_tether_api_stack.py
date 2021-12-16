@@ -15,11 +15,16 @@ from aws_cdk import (
 
 from constructs import Construct
 
-class PhoneBackgroundHelperStack(Stack):
+class MindTetherApiStack(Stack):
 
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
         
+        if not self.node.try_get_context("short_url_host") or not self.node.try_get_context("api_host"):
+            print("Missing values in cdk.json. Please check that short_url_host and api_host are provided.")
+        else:
+            short_url_host = self.node.try_get_context("short_url_host")
+            api_host = self.node.try_get_context("api_host")
 
         ## Create the S3 Asset Bucket
         asset_bucket = s3.Bucket(self,"AssetBucket")
@@ -27,7 +32,7 @@ class PhoneBackgroundHelperStack(Stack):
                                         enabled=True,
                                         expiration=Duration.days(1))
         ## Create and configure API Gateway
-        api = apigw.RestApi(self, "PhoneBackgroundHelperAPI")
+        api = apigw.RestApi(self, "MindTetherAPI")
         deployment_environment = self._get_environment()
         ## Setting stage from the deployment
         stage_name = deployment_environment['stage']
@@ -61,8 +66,8 @@ class PhoneBackgroundHelperStack(Stack):
         
         ## Lambda:GenerateHelperImage - Add Environment Variables
         generate_helper_image_lambda.add_environment("S3_BUCKET", asset_bucket.bucket_name)
-        generate_helper_image_lambda.add_environment("SHORTENER_URL","https://link.mindtether.rudy.fyi/admin_shrink_url")
-        generate_helper_image_lambda.add_environment("CDN_PREFIX","link.mindtether.rudy.fyi")
+        generate_helper_image_lambda.add_environment("SHORTENER_URL","https://%s/admin_shrink_url"%(short_url_host))
+        generate_helper_image_lambda.add_environment("CDN_PREFIX",short_url_host)
         
         ## Lambda:GenerateHelperImage - Grant access to asset_bucket (s3)
         asset_bucket.grant_read(generate_helper_image_lambda)
@@ -99,14 +104,10 @@ class PhoneBackgroundHelperStack(Stack):
         if deployment_environment['stage'] == "prod":
             generate_helper_image_lambda_version = _lambda.Version(self,'GenerateHelperImageV1', function=generate_helper_image_lambda)
             generate_helper_image_lambda_alias = _lambda.Alias(self,"alias", alias_name="prod", version=generate_helper_image_lambda_version)
-            
-            # get_phone_data_lambda_version = _lambda.Version(self,"GetPhoneDataV1", function=get_phone_data_lambda)
-            # get_phone_data_lambda_alias = _lambda.Alias(self,"alias", alias_name="prod", version=get_phone_data_lambda_version)
         else:
             generate_helper_image_lambda_alias = _lambda.Alias(self,"GenerateHelperImageAlias", alias_name="dev",version=generate_helper_image_lambda.latest_version)
-            # get_phone_data_lambda_alias = _lambda.Alias(self,"GetPhoneDataAlias", alias_name="dev",version=get_phone_data_lambda.latest_version)
             
-        
+
     
         
         
