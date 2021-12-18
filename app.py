@@ -2,10 +2,10 @@
 import os
 
 from aws_cdk import (
-    App,Tags
+    App
 )
 
-from app_cdk.mind_tether_api_stack import MindTetherApiStack, PhoneBackgroundHelperStack
+from app_cdk.mind_tether_api_stack import MindTetherApiStack
 
 app = App()
 

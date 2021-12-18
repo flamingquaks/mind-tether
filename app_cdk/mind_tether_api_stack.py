@@ -1,15 +1,9 @@
-from typing_extensions import runtime
-import json
 from aws_cdk import (
     Duration,
     BundlingOptions,
     Stack,
-    Stage,
-    AssetStaging,
     aws_s3 as s3,
-    aws_s3_deployment as s3_deployment,
     aws_apigateway as apigw,
-    aws_appintegrations as api_integrations,
     aws_lambda as _lambda,    
 )
 
@@ -49,6 +43,13 @@ class MindTetherApiStack(Stack):
             self, "mindtether_core", code=_lambda.Code.from_asset("lambda_layers/mindtether_core"),
             layer_version_name="mindtether_core"
         )
+        
+        """ 
+        V0 - GenerateHelperImage Lambda
+        This was the very first iteration of the project.   
+        #DEPRECATED!
+        """
+        
         ## Lambda:GenerateHelperImage - Define Function
         generate_helper_image_lambda = _lambda.Function(self,
                                                         "GenerateHelperImage",
@@ -79,6 +80,29 @@ class MindTetherApiStack(Stack):
         
         generate_helper_image_api_resource.add_method("GET",generate_helper_image_api_integration)
         
+        #### END of V0
+        
+        """V1 Lambdas
+        """
+        
+        ## get_tether_lambdas
+        
+        get_background_image_info_lambda = _lambda.Function(self,
+                                                        "GetBkgImgInfo",
+                                                        runtime=_lambda.Runtime.PYTHON_3_8,
+                                                        code=_lambda.Code.from_asset(path="lambda/get_tether/get_background_image_info", bundling=BundlingOptions(
+                                                            command=["bash", "-c", "pip install -r requirements.txt -t /asset-output --cache-dir /tmp && cp -au . /asset-output"],
+                                                            image=_lambda.Runtime.PYTHON_3_8.bundling_image)),
+                                                        handler='app.lambda_handler',
+                                                        timeout=Duration.seconds(60)
+                                                        )
+        get_background_image_info_lambda.add_environment("MIND_TETHER_API_ASSETS",asset_bucket.bucket_name)
+        get_background_image_info_lambda.add_layers(mindtether_core,mindtether_assets)
+        asset_bucket.grant_read_write(get_background_image_info_lambda)
+        
+            
+        
+
         if(self.node.try_get_context("extended_mode") and self.node.try_get_context("extended_mode") == True):
             print("extended_mode == True")
             ## URLShortener
