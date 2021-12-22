@@ -27,7 +27,8 @@ class CdkPipelineStack(Stack):
                 input=code_source,
                 commands=[
                 "npm install -g aws-cdk",
-                "npm install -g pyenv",
+                "curl https://pyenv.run | bash",
+                "exec $SHELL"
                 "pyenv install %s" % (self.node.try_get_context("python-version")),
                 "pyenv virtualenv %s mind-tether" % (self.node.try_get_context("python-version")),
                 "pyenv activate mind-tether"
