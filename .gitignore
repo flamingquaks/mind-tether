@@ -17,3 +17,4 @@ cdk.out
 aws/dist
 workspace.code-workspace
 private-todo.md
+cdk.context.json

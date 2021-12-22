@@ -5,14 +5,18 @@ from aws_cdk import (
     aws_s3 as s3,
     aws_apigateway as apigw,
     aws_lambda as _lambda,    
+    aws_lambda_python_alpha as python_lambda
 )
 
 from constructs import Construct
 
 class MindTetherApiStack(Stack):
 
-    def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
+    def __init__(self, scope: Construct, construct_id: str,   **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
+        
+            
+        api = apigw.RestApi(self,"MindTetherApi")
         
         if not self.node.try_get_context("short_url_host") or not self.node.try_get_context("api_host"):
             print("Missing values in cdk.json. Please check that short_url_host and api_host are provided.")
@@ -25,13 +29,9 @@ class MindTetherApiStack(Stack):
         asset_bucket.add_lifecycle_rule(abort_incomplete_multipart_upload_after=Duration.days(1),
                                         enabled=True,
                                         expiration=Duration.days(1))
-        ## Create and configure API Gateway
-        api = apigw.RestApi(self, "MindTetherAPI")
-        deployment_environment = self._get_environment()
-        ## Setting stage from the deployment
-        stage_name = deployment_environment['stage']
+        
         api_deployment = apigw.Deployment(self,"deployment",api=api)
-        api.deployment_stage = apigw.Stage(self,stage_name, deployment=api_deployment,stage_name=stage_name)
+        # api.deployment_stage = apigw.Stage(self,stage_name, deployment=api_deployment,stage_name=stage_name)
         
         #Create the Lambda Layers
         mindtether_assets = _lambda.LayerVersion(
@@ -50,16 +50,15 @@ class MindTetherApiStack(Stack):
         #DEPRECATED!
         """
         
-        ## Lambda:GenerateHelperImage - Define Function
-        generate_helper_image_lambda = _lambda.Function(self,
-                                                        "GenerateHelperImage",
-                                                        runtime=_lambda.Runtime.PYTHON_3_8,
-                                                        code=_lambda.Code.from_asset(path="lambda/generate_helper_image", bundling=BundlingOptions(
-                                                            command=["bash", "-c", "pip install -r requirements.txt -t /asset-output --cache-dir /tmp && cp -au . /asset-output"],
-                                                            image=_lambda.Runtime.PYTHON_3_8.bundling_image)),
-                                                        handler='app.lambda_handler',
-                                                        timeout=Duration.seconds(60)
-                                                        )
+        generate_helper_image_lambda = python_lambda.PythonFunction(
+            self,
+            "GenerateHelperImage",
+            entry="lambda/generate_helper_image",
+            runtime=_lambda.Runtime.PYTHON_3_8,
+            index="app.py",
+            handler="lambda_handler",
+            timeout=Duration.seconds(60)
+        )
         
         ## Lambda:GenerateHelperImage - Add Lambda Layers
         generate_helper_image_lambda.add_layers(mindtether_assets)
@@ -86,16 +85,15 @@ class MindTetherApiStack(Stack):
         """
         
         ## get_tether_lambdas
-        
-        get_background_image_info_lambda = _lambda.Function(self,
-                                                        "GetBkgImgInfo",
-                                                        runtime=_lambda.Runtime.PYTHON_3_8,
-                                                        code=_lambda.Code.from_asset(path="lambda/get_tether/get_background_image_info", bundling=BundlingOptions(
-                                                            command=["bash", "-c", "pip install -r requirements.txt -t /asset-output --cache-dir /tmp && cp -au . /asset-output"],
-                                                            image=_lambda.Runtime.PYTHON_3_8.bundling_image)),
-                                                        handler='app.lambda_handler',
-                                                        timeout=Duration.seconds(60)
-                                                        )
+        get_background_image_info_lambda = python_lambda.PythonFunction(
+            self,
+            "GetBkgImgInfo",
+            entry="lambda/get_tether/get_background_image_info",
+            index="app.py",
+            handler="lambda_handler",
+            runtime=_lambda.Runtime.PYTHON_3_8,
+            timeout=Duration.seconds(60)
+        )
         get_background_image_info_lambda.add_environment("MIND_TETHER_API_ASSETS",asset_bucket.bucket_name)
         get_background_image_info_lambda.add_layers(mindtether_core,mindtether_assets)
         asset_bucket.grant_read_write(get_background_image_info_lambda)
@@ -125,24 +123,18 @@ class MindTetherApiStack(Stack):
             shortener_bucket.grant_read_write(url_shortener_lambda)
         
         # Version based on context
-        if deployment_environment['stage'] == "prod":
+        if self.node.try_get_context("deployment") == "prod":
             generate_helper_image_lambda_version = _lambda.Version(self,'GenerateHelperImageV1', function=generate_helper_image_lambda)
             generate_helper_image_lambda_alias = _lambda.Alias(self,"alias", alias_name="prod", version=generate_helper_image_lambda_version)
         else:
             generate_helper_image_lambda_alias = _lambda.Alias(self,"GenerateHelperImageAlias", alias_name="dev",version=generate_helper_image_lambda.latest_version)
             
 
-    
+            prodStage = apigw.Stage(self,"prod",deployment=api_deployment,stage_name="prod")
+            devStage = apigw.Stage(self,"dev",deployment=api_deployment, stage_name="dev")
         
-        
-    def _get_environment(self):
-        print("Determining deployment environment")
-        if self.node.try_get_context("deployment"):
-            deployment_env = dict(self.node.try_get_context(self.node.try_get_context("deployment")))
-            print("Received deployment context from input.")
-            print("Setting deployment stage to %s"%(deployment_env['stage']))
+        if self.node.try_get_context("deployment") == "prod":
+            api.deployment_stage = prodStage
         else:
-            print("No deployment context received from input. Defaulting...")
-            deployment_env = dict(self.node.try_get_context("dev"))
-            print("Setting deployment stage to %s"%(deployment_env['stage']))
-        return deployment_env;
+            api.deployment_stage = devStage
+        
