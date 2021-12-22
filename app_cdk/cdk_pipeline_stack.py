@@ -16,6 +16,7 @@ class CdkPipelineStack(Stack):
         super().__init__(scope, construct_id, **kwargs)
         
         if self.node.try_get_context("branch"):
+            
             branch = self.node.try_get_context("branch")
         else:
             branch = "development"
@@ -27,7 +28,7 @@ class CdkPipelineStack(Stack):
                 commands=[
                 "npm install -g aws-cdk",
                 "npm install -g pyenv",
-                "pyenv install %s" % (self.node.try_get_contact("python-version")),
+                "pyenv install %s" % (self.node.try_get_context("python-version")),
                 "pyenv virtualenv %s mind-tether" % (self.node.try_get_context("python-version")),
                 "pyenv activate mind-tether"
                 "pip install -r requirements.txt",
