@@ -151,8 +151,8 @@ class MindTetherApiStack(Stack):
             prodStage = apigw.Stage(self,"prod",deployment=api_deployment,stage_name="prod")
             devStage = apigw.Stage(self,"dev",deployment=api_deployment, stage_name="dev")
         
-        if self.node.try_get_context("deployment") == "prod":
-            api.deployment_stage = prodStage
-        else:
-            api.deployment_stage = devStage
+        # if self.node.try_get_context("deployment") == "prod":
+        #     api.deployment_stage = prodStage
+        # else:
+        #     api.deployment_stage = devStage
         
