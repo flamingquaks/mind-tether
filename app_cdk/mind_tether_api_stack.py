@@ -5,7 +5,7 @@ from aws_cdk import (
     aws_s3 as s3,
     aws_apigateway as apigw,
     aws_lambda as _lambda,    
-    aws_lambda_python_alpha as python_lambda
+    # aws_lambda_python_alpha as python_lambda
 )
 
 from constructs import Construct
@@ -50,18 +50,27 @@ class MindTetherApiStack(Stack):
         #DEPRECATED!
         """
         
-        generate_helper_image_lambda = python_lambda.PythonFunction(
+        generate_helper_image_lambda = _lambda.Function(
             self,
             "GenerateHelperImage",
-            entry="lambda/generate_helper_image",
-            runtime=_lambda.Runtime.PYTHON_3_8,
-            index="app.py",
-            handler="lambda_handler",
-            timeout=Duration.seconds(60)
+            code=_lambda.Code.from_asset("lambda/generate_helper_image"),
+            handler="app.lambda_handler",
+            runtime=_lambda.Runtime.PYTHON_3_8
         )
+        
+        # generate_helper_image_lambda = python_lambda.PythonFunction(
+        #     self,
+        #     "GenerateHelperImage",
+        #     entry="lambda/generate_helper_image",
+        #     runtime=_lambda.Runtime.PYTHON_3_8,
+        #     index="app.py",
+        #     handler="lambda_handler",
+        #     timeout=Duration.seconds(60)
+        # )
         
         ## Lambda:GenerateHelperImage - Add Lambda Layers
         generate_helper_image_lambda.add_layers(mindtether_assets)
+        generate_helper_image_lambda.add_layers(mindtether_core)
         # generate_helper_image_lambda.add_layers(mindtether_core)
         
         ## Lambda:GenerateHelperImage - Add Environment Variables
@@ -84,16 +93,25 @@ class MindTetherApiStack(Stack):
         """V1 Lambdas
         """
         
-        ## get_tether_lambdas
-        get_background_image_info_lambda = python_lambda.PythonFunction(
+        # ## get_tether_lambdas
+        # get_background_image_info_lambda = python_lambda.PythonFunction(
+        #     self,
+        #     "GetBkgImgInfo",
+        #     entry="lambda/get_tether/get_background_image_info",
+        #     index="app.py",
+        #     handler="lambda_handler",
+        #     runtime=_lambda.Runtime.PYTHON_3_8,
+        #     timeout=Duration.seconds(60)
+        # )
+        get_background_image_info_lambda = _lambda.Function(
             self,
             "GetBkgImgInfo",
-            entry="lambda/get_tether/get_background_image_info",
-            index="app.py",
-            handler="lambda_handler",
-            runtime=_lambda.Runtime.PYTHON_3_8,
-            timeout=Duration.seconds(60)
+            code=_lambda.Code.from_asset("lambda/get_tether/get_background_image_info"),
+            handler="app.lambda_handler",
+            runtime=_lambda.Runtime.PYTHON_3_8
         )
+        
+        
         get_background_image_info_lambda.add_environment("MIND_TETHER_API_ASSETS",asset_bucket.bucket_name)
         get_background_image_info_lambda.add_layers(mindtether_core,mindtether_assets)
         asset_bucket.grant_read_write(get_background_image_info_lambda)

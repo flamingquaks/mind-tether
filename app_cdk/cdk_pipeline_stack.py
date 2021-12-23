@@ -41,6 +41,9 @@ class CdkPipelineStack(Stack):
                     "commands": [
                         "pip install pipenv"
                     ]
+                },
+                "pre_build":{
+                    
                 }
             }
         })
@@ -50,6 +53,10 @@ class CdkPipelineStack(Stack):
                 commands=[
                 "npm install -g aws-cdk",
                 "pipenv install",
+                "cd lambda_layers/mindtether_core",
+                "pipenv lock -r > requirements.txt"
+                "pip install -r ./requirements.txt --target ./python"
+                "cd"
                 "pipenv run cdk synth --verbose"
             ]
             ),code_build_defaults=pipelines.CodeBuildOptions(
@@ -60,7 +67,7 @@ class CdkPipelineStack(Stack):
 
         
         pipeline_stage = pipeline.add_stage(CdkPipelineStage(self,"Stage"))
-        pipeline_stage.man
+
         # 
         # dev_stage = Stage(self,"DevStage")
     
