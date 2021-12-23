@@ -30,7 +30,6 @@ class MindTetherApiStack(Stack):
                                         enabled=True,
                                         expiration=Duration.days(1))
         
-        api_deployment = apigw.Deployment(self,"deployment",api=api)
         # api.deployment_stage = apigw.Stage(self,stage_name, deployment=api_deployment,stage_name=stage_name)
         
         #Create the Lambda Layers
@@ -148,8 +147,9 @@ class MindTetherApiStack(Stack):
             generate_helper_image_lambda_alias = _lambda.Alias(self,"GenerateHelperImageAlias", alias_name="dev",version=generate_helper_image_lambda.latest_version)
             
 
-            prodStage = apigw.Stage(self,"prod",deployment=api_deployment,stage_name="prod")
-            devStage = apigw.Stage(self,"dev",deployment=api_deployment, stage_name="dev")
+        api_deployment = apigw.Deployment(self,"deployment",api=api)
+        prodStage = apigw.Stage(self,"prod",deployment=api_deployment,stage_name="prod")
+        devStage = apigw.Stage(self,"dev",deployment=api_deployment, stage_name="dev")
         
         # if self.node.try_get_context("deployment") == "prod":
         #     api.deployment_stage = prodStage
