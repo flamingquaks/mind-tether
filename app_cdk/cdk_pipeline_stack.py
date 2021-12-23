@@ -56,8 +56,7 @@ class CdkPipelineStack(Stack):
                 "cd lambda_layers/mindtether_core",
                 "pipenv lock -r > requirements.txt",
                 "pip install -r ./requirements.txt --target ./python",
-                "cd \"${CODEBUILD_SOURCE_DIR}\"",
-                "pwd",
+                "cd \"${CODEBUILD_SRC_DIR}\"",
                 "pipenv run cdk synth --verbose"
             ]
             ),code_build_defaults=pipelines.CodeBuildOptions(
