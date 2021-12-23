@@ -39,7 +39,8 @@ class CdkPipelineStack(Stack):
                 input=code_source,
                 commands=[
                 "npm install -g aws-cdk",
-                "pip install -r requirements.txt",
+                "pip install pipenv",
+                "pipenv install",
                 "npx cdk synth"
             ]
             ),code_build_defaults=pipelines.CodeBuildOptions(
