@@ -10,7 +10,7 @@ from aws_cdk import (
 
 from constructs import Construct
 
-from app_cdk.cdk_pipeline_stage import CdkPipelineStage
+from app_cdk.cdk_pipeline_stage import MindTetherApiStage
 
 class CdkPipelineStack(Stack):
 
@@ -66,7 +66,7 @@ class CdkPipelineStack(Stack):
         
 
         
-        pipeline_stage = pipeline.add_stage(CdkPipelineStage(self,"Stage"))
+        pipeline_stage = pipeline.add_stage(MindTetherApiStage(self,"MindTether-Dev"))
 
         # 
         # dev_stage = Stage(self,"DevStage")

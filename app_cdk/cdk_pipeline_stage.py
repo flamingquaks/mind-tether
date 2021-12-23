@@ -6,7 +6,7 @@ from aws_cdk import (
 
 from .mind_tether_api_stack import MindTetherApiStack
 
-class CdkPipelineStage(Stage):
+class MindTetherApiStage(Stage):
     def __init__(self, scope: Construct, id: str, **kwargs):
         super().__init__(scope, id, **kwargs)
         
