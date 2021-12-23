@@ -50,7 +50,7 @@ class CdkPipelineStack(Stack):
                 commands=[
                 "npm install -g aws-cdk",
                 "pipenv install",
-                "cdk synth"
+                "pipenv run cdk synth --verbose"
             ]
             ),code_build_defaults=pipelines.CodeBuildOptions(
                 partial_build_spec=build_spec
@@ -60,6 +60,7 @@ class CdkPipelineStack(Stack):
 
         
         pipeline_stage = pipeline.add_stage(CdkPipelineStage(self,"Stage"))
+        pipeline_stage.man
         # 
         # dev_stage = Stage(self,"DevStage")
     
