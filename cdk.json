@@ -20,7 +20,7 @@
     "@aws-cdk-lib/aws-rds:lowercaseDbIdentifier": true,
     "@aws-cdk-lib/aws-lambda:recognizeVersionProps": true,
     "@aws-cdk-lib/aws-cloudfront:defaultSecurityPolicyTLSv1.2_2021": true,
-    "python_version": "3.8.6",
+    "python_version": "3.8",
     "short_url_host": "link.mindtether.rudy.fyi",
     "api_host": "api.mindtether.rudy.fyi",
     "prod":{

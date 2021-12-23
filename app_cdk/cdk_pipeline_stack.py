@@ -1,9 +1,11 @@
 
+from typing_extensions import runtime
 from aws_cdk import (
     Stack,
     Stage,
     pipelines,
-    aws_apigateway as apigw
+    aws_apigateway as apigw,
+    aws_codebuild as codebuild
 )
 
 from constructs import Construct
@@ -20,22 +22,30 @@ class CdkPipelineStack(Stack):
             branch = self.node.try_get_context("branch")
         else:
             branch = "development"
+        python_version=self.node.try_get_context("python_version")
         code_source = pipelines.CodePipelineSource.connection(
                     "flamingquaks/mind-tether", branch, connection_arn=self.node.try_get_context("github_connection_arn"))
-        pipeline = pipelines.CodePipeline(self,"Pipeline", synth=pipelines.ShellStep(
+        build_spec = codebuild.BuildSpec.from_object({
+            "phases": {
+                "install": {
+                    "runtime-versions": {
+                        "python": self.node.try_get_context("python_version")
+                    }
+                }
+            }
+        })
+        pipeline = pipelines.CodePipeline(self,"MindTetherPipeline", synth=pipelines.ShellStep(
                 "Synth",
                 input=code_source,
                 commands=[
                 "npm install -g aws-cdk",
-                "curl https://pyenv.run | bash",
-                "exec $SHELL"
-                "pyenv install %s" % (self.node.try_get_context("python-version")),
-                "pyenv virtualenv %s mind-tether" % (self.node.try_get_context("python-version")),
-                "pyenv activate mind-tether"
                 "pip install -r requirements.txt",
                 "npx cdk synth"
             ]
-            ))
+            ),code_build_defaults=pipelines.CodeBuildOptions(
+                partial_build_spec=build_spec
+            )
+        )
         
         
 
