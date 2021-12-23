@@ -54,7 +54,7 @@ class CdkPipelineStack(Stack):
                 "npm install -g aws-cdk",
                 "pipenv install",
                 "cd lambda_layers/mindtether_core",
-                "pipenv lock -r > requirements.txt"
+                "pipenv lock -r > requirements.txt",
                 "pip install -r ./requirements.txt --target ./python",
                 "cd",
                 "pipenv run cdk synth --verbose"
