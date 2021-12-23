@@ -1,8 +1,8 @@
 
 from typing_extensions import runtime
 from aws_cdk import (
+    CfnParameter,
     Stack,
-    Stage,
     pipelines,
     aws_apigateway as apigw,
     aws_codebuild as codebuild
@@ -17,6 +17,13 @@ class CdkPipelineStack(Stack):
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
         
+        connection_arn = CfnParameter(
+            self,
+            "githubConnectionArn",
+            type="String",
+            description="The ARN for the GitHub connection"
+        )
+        
         if self.node.try_get_context("branch"):
             
             branch = self.node.try_get_context("branch")
@@ -24,13 +31,16 @@ class CdkPipelineStack(Stack):
             branch = "development"
         python_version=self.node.try_get_context("python_version")
         code_source = pipelines.CodePipelineSource.connection(
-                    "flamingquaks/mind-tether", branch, connection_arn=self.node.try_get_context("github_connection_arn"))
+                    "flamingquaks/mind-tether", branch, connection_arn=connection_arn.value_as_string)
         build_spec = codebuild.BuildSpec.from_object({
             "phases": {
                 "install": {
                     "runtime-versions": {
                         "python": self.node.try_get_context("python_version")
-                    }
+                    },
+                    "commands": [
+                        "pip install pipenv"
+                    ]
                 }
             }
         })
@@ -39,15 +49,13 @@ class CdkPipelineStack(Stack):
                 input=code_source,
                 commands=[
                 "npm install -g aws-cdk",
-                "pip install pipenv",
                 "pipenv install",
-                "npx cdk synth"
+                "pipenv run cdk synth --verbose"
             ]
             ),code_build_defaults=pipelines.CodeBuildOptions(
                 partial_build_spec=build_spec
             )
         )
-        
         
 
         
