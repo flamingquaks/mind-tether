@@ -77,6 +77,7 @@ def lambda_handler(event, context):
     body_data = {
         "image_url": image_url
     }
+    
     return {
         'isBase64Encoded': False,
         'headers': {

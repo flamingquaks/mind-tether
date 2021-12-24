@@ -15,11 +15,13 @@
     ]
   },
   "context": {
+    "@aws-cdk/core:newStyleStackSynthesis": true,
     "@aws-cdk-lib/aws-apigateway:usagePlanKeyOrderInsensitiveId": true,
     "@aws-cdk-lib/aws-rds:lowercaseDbIdentifier": true,
     "@aws-cdk-lib/aws-lambda:recognizeVersionProps": true,
     "@aws-cdk-lib/aws-cloudfront:defaultSecurityPolicyTLSv1.2_2021": true,
-    "cdn_host": "link.mindtether.rudy.fyi",
+    "python_version": "3.8",
+    "short_url_host": "link.mindtether.rudy.fyi",
     "api_host": "api.mindtether.rudy.fyi",
     "prod":{
       "stage": "v1"
