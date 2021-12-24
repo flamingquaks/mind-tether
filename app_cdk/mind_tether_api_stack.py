@@ -130,5 +130,6 @@ class MindTetherApiStack(Stack):
             
 
         api_deployment = apigw.Deployment(self,"deployment",api=api)
-        api_stage = apigw.Stage(self,stage_name,deployment=api_deployment, stage_name=stage_name)
+        if stage_name != "prod":
+            api_stage = apigw.Stage(self,stage_name,deployment=api_deployment, stage_name=stage_name)
         

@@ -64,7 +64,7 @@ class CdkPipelineStack(Stack):
         
         dev_stage = pipeline.add_stage(MindTetherApiStage(self,"MindTether-Dev", "dev"))
         dev_stage.add_post(pipelines.ManualApprovalStep(
-            "TestManualApproval"
+            "Review Code and Authorize Release to Production"
             )
             
         )
