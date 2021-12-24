@@ -54,7 +54,8 @@ class MindTetherApiStack(Stack):
             "GenerateHelperImage",
             code=_lambda.Code.from_asset("lambda/generate_helper_image"),
             handler="app.lambda_handler",
-            runtime=_lambda.Runtime.PYTHON_3_8
+            runtime=_lambda.Runtime.PYTHON_3_8,
+            timeout=Duration.seconds(60)
         )
         
         # generate_helper_image_lambda = python_lambda.PythonFunction(
