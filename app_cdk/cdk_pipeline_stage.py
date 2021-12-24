@@ -10,11 +10,10 @@ class MindTetherApiStage(Stage):
     def __init__(self, scope: Construct, id: str, stage_name:str, **kwargs):
         super().__init__(scope, id, **kwargs)
         
-        stack = MindTetherApiStack(self,"API",  
+        stack = MindTetherApiStack(self,"API", stage_name=stage_name,
                                         tags={
                                             "app":"mindtether",
                                             "cost-center": "mindtether-api",
                                             "stage_name": stage_name
-                                            },
-                                        stage_name=stage_name
+                                            }
         )
