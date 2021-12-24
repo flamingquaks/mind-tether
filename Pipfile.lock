@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "b8170bd88d765625499f04e0d13448056bb23d5267141f65f026cb00da73fee4"
+            "sha256": "5472c8fc419e9331f17871f5518d424bb45f2fcc641008bfdf2ebbe4f8712756"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -31,14 +31,6 @@
             ],
             "index": "pypi",
             "version": "==2.3.0"
-        },
-        "aws-cdk.aws-lambda-python-alpha": {
-            "hashes": [
-                "sha256:ccbabab872e418259cf2c92a9c2eff49d42065f4d18d620b2030e0fc14367c56",
-                "sha256:dccd5fa51fd52777075e2349b1a42a6ed24bff016927461dea362cd93ceeddee"
-            ],
-            "index": "pypi",
-            "version": "==2.3.0a0"
         },
         "boto3": {
             "hashes": [
