@@ -17,7 +17,7 @@ class MindTetherApiStack(Stack):
         
         if not stage_name:
             exit()
-        api = apigw.RestApi(self,"MindTetherApi")
+        api = apigw.RestApi(self,"MindTetherApi-%s"%(stage_name))
         
         if not self.node.try_get_context("short_url_host") or not self.node.try_get_context("api_host"):
             print("Missing values in cdk.json. Please check that short_url_host and api_host are provided.")
