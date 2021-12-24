@@ -5,7 +5,8 @@ from aws_cdk import (
     Stack,
     pipelines,
     aws_apigateway as apigw,
-    aws_codebuild as codebuild
+    aws_codebuild as codebuild,
+    aws_codepipeline_actions as codepipeline_actions
 )
 
 from constructs import Construct
@@ -24,12 +25,7 @@ class CdkPipelineStack(Stack):
             description="The ARN for the GitHub connection"
         )
         
-        if self.node.try_get_context("branch"):
-            
-            branch = self.node.try_get_context("branch")
-        else:
-            branch = "development"
-        python_version=self.node.try_get_context("python_version")
+        branch="development"
         code_source = pipelines.CodePipelineSource.connection(
                     "flamingquaks/mind-tether", branch, connection_arn=connection_arn.value_as_string)
         build_spec = codebuild.BuildSpec.from_object({
@@ -66,7 +62,14 @@ class CdkPipelineStack(Stack):
         
 
         
-        pipeline_stage = pipeline.add_stage(MindTetherApiStage(self,"MindTether-Dev"))
+        dev_stage = pipeline.add_stage(MindTetherApiStage(self,"MindTether-Dev"))
+        dev_stage.add_post(pipelines.ManualApprovalStep(
+            "TestManualApproval"
+            )
+            
+        )
+        
+        prod_stage = pipeline.add_stage(MindTetherApiStage(self,"MindTether-Prod"))
 
         # 
         # dev_stage = Stage(self,"DevStage")

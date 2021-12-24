@@ -12,10 +12,11 @@ from constructs import Construct
 
 class MindTetherApiStack(Stack):
 
-    def __init__(self, scope: Construct, construct_id: str,   **kwargs) -> None:
+    def __init__(self, scope: Construct, construct_id: str, stage_name:str=None,  **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
         
-            
+        if not stage_name:
+            exit()
         api = apigw.RestApi(self,"MindTetherApi")
         
         if not self.node.try_get_context("short_url_host") or not self.node.try_get_context("api_host"):
@@ -29,9 +30,7 @@ class MindTetherApiStack(Stack):
         asset_bucket.add_lifecycle_rule(abort_incomplete_multipart_upload_after=Duration.days(1),
                                         enabled=True,
                                         expiration=Duration.days(1))
-        
-        # api.deployment_stage = apigw.Stage(self,stage_name, deployment=api_deployment,stage_name=stage_name)
-        
+                
         #Create the Lambda Layers
         mindtether_assets = _lambda.LayerVersion(
             self, 'mindtether_assets', code=_lambda.Code.from_asset("lambda_layers/mindtether_assets_layer"),
@@ -58,15 +57,6 @@ class MindTetherApiStack(Stack):
             timeout=Duration.seconds(60)
         )
         
-        # generate_helper_image_lambda = python_lambda.PythonFunction(
-        #     self,
-        #     "GenerateHelperImage",
-        #     entry="lambda/generate_helper_image",
-        #     runtime=_lambda.Runtime.PYTHON_3_8,
-        #     index="app.py",
-        #     handler="lambda_handler",
-        #     timeout=Duration.seconds(60)
-        # )
         
         ## Lambda:GenerateHelperImage - Add Lambda Layers
         generate_helper_image_lambda.add_layers(mindtether_assets)
@@ -93,16 +83,7 @@ class MindTetherApiStack(Stack):
         """V1 Lambdas
         """
         
-        # ## get_tether_lambdas
-        # get_background_image_info_lambda = python_lambda.PythonFunction(
-        #     self,
-        #     "GetBkgImgInfo",
-        #     entry="lambda/get_tether/get_background_image_info",
-        #     index="app.py",
-        #     handler="lambda_handler",
-        #     runtime=_lambda.Runtime.PYTHON_3_8,
-        #     timeout=Duration.seconds(60)
-        # )
+        
         get_background_image_info_lambda = _lambda.Function(
             self,
             "GetBkgImgInfo",
@@ -149,5 +130,5 @@ class MindTetherApiStack(Stack):
             
 
         api_deployment = apigw.Deployment(self,"deployment",api=api)
-        devStage = apigw.Stage(self,"dev",deployment=api_deployment, stage_name="dev")
+        api_stage = apigw.Stage(self,stage_name,deployment=api_deployment, stage_name=stage_name)
         
