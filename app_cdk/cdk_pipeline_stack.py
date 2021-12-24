@@ -62,14 +62,14 @@ class CdkPipelineStack(Stack):
         
 
         
-        dev_stage = pipeline.add_stage(MindTetherApiStage(self,"MindTether-Dev"))
+        dev_stage = pipeline.add_stage(MindTetherApiStage(self,"MindTether-Dev", "dev"))
         dev_stage.add_post(pipelines.ManualApprovalStep(
             "TestManualApproval"
             )
             
         )
         
-        prod_stage = pipeline.add_stage(MindTetherApiStage(self,"MindTether-Prod"))
+        prod_stage = pipeline.add_stage(MindTetherApiStage(self,"MindTether-Prod", "prod"))
 
         # 
         # dev_stage = Stage(self,"DevStage")
