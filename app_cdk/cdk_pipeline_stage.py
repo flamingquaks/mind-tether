@@ -16,4 +16,5 @@ class MindTetherApiStage(Stage):
                                             "cost-center": "mindtether-api",
                                             "stage_name": stage_name
                                             },
+                                        stage_name=stage_name
         )
