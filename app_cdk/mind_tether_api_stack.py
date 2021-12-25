@@ -102,7 +102,18 @@ class MindTetherApiStack(Stack):
         asset_bucket.grant_read_write(get_background_image_info_lambda)
         
             
+        get_day_image_lambda = _lambda.Function(
+            self,
+            "GetDayImgInfo",
+            code=_lambda.Code.from_asset("lambda/get_tether/get_day_image_info"),
+            runtime=_lambda.Runtime.PYTHON_3_8,
+            timeout=Duration.seconds(60)
+        )
         
+        get_day_image_lambda.add_environment("MIND_TETHER_API_ASSETS",asset_bucket.bucket_name)
+        get_day_image_lambda.add_environment("ASSET_LAYER_NAME", mindtether_assets_name)
+        get_day_image_lambda.add_layers(mindtether_core,mindtether_assets)
+        asset_bucket.grant_read_write(get_day_image_lambda)
 
         if(self.node.try_get_context("extended_mode") and self.node.try_get_context("extended_mode") == True):
             print("extended_mode == True")
