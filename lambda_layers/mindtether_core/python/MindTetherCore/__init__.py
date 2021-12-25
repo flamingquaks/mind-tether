@@ -45,5 +45,5 @@ class Day():
     
     
     @classmethod
-    def get_day_color(day: str):
+    def get_day_color(self, day: str):
         return Day.__days[day.lower]['color']

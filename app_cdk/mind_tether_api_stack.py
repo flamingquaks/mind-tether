@@ -32,10 +32,12 @@ class MindTetherApiStack(Stack):
                                         expiration=Duration.days(1))
                 
         #Create the Lambda Layers
+        mindtether_assets_name="mindtether_assets"
         mindtether_assets = _lambda.LayerVersion(
-            self, 'mindtether_assets', code=_lambda.Code.from_asset("lambda_layers/mindtether_assets_layer"),
+            self, mindtether_assets_name, code=_lambda.Code.from_asset("lambda_layers/mindtether_assets_layer"),
             layer_version_name="mindtether_assets"
         )
+        mindtether_assets_path="/opt/%s" % (mindtether_assets_name)
         
         mindtether_core = _lambda.LayerVersion(
             self, "mindtether_core", code=_lambda.Code.from_asset("lambda_layers/mindtether_core"),
@@ -89,11 +91,13 @@ class MindTetherApiStack(Stack):
             "GetBkgImgInfo",
             code=_lambda.Code.from_asset("lambda/get_tether/get_background_image_info"),
             handler="app.lambda_handler",
-            runtime=_lambda.Runtime.PYTHON_3_8
+            runtime=_lambda.Runtime.PYTHON_3_8,
+            timeout=Duration.seconds(60)
         )
         
         
         get_background_image_info_lambda.add_environment("MIND_TETHER_API_ASSETS",asset_bucket.bucket_name)
+        get_background_image_info_lambda.add_environment("ASSET_LAYER_NAME", mindtether_assets_name)
         get_background_image_info_lambda.add_layers(mindtether_core,mindtether_assets)
         asset_bucket.grant_read_write(get_background_image_info_lambda)
         
