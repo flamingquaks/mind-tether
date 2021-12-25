@@ -28,8 +28,7 @@ class MindTetherApiStack(Stack):
         ## Create the S3 Asset Bucket
         asset_bucket = s3.Bucket(self,"AssetBucket")
         asset_bucket.add_lifecycle_rule(abort_incomplete_multipart_upload_after=Duration.days(1),
-                                        enabled=True,
-                                        expiration=Duration.days(1))
+                                        enabled=True)
                 
         #Create the Lambda Layers
         mindtether_assets_name="mindtether_assets"
@@ -106,6 +105,7 @@ class MindTetherApiStack(Stack):
             self,
             "GetDayImgInfo",
             code=_lambda.Code.from_asset("lambda/get_tether/get_day_image_info"),
+            handler="app.lambda_handler",
             runtime=_lambda.Runtime.PYTHON_3_8,
             timeout=Duration.seconds(60)
         )
