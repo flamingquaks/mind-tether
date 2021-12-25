@@ -1,7 +1,8 @@
 
 import boto3
+import botocore
 import os
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFont
 from io import BytesIO
 import MindTetherCore
 
@@ -13,43 +14,55 @@ font_path = default_font.FILE
 
 def get_exisiting_image(day:str, screen_width:int, screen_height:int):
     image_name = "%s@%sx%s.png"%(day,screen_width,screen_height)
-    if os.path.exists("%s/%s")%(asset_file_path,image_name):
+    image_full_path= "%s/%s"%(asset_file_path,image_name)
+    if os.path.exists(image_full_path):
         return "%s/%s" % (asset_file_path,image_name)
     else:
         s3 = boto3.resource("s3")
-        s3_object_summary = s3.ObjectSummary(os.environ['MIND_TETHER_API_ASSETS'], "%s/%s" % (asset_file_path,image_name))
-        if s3_object_summary and s3_object_summary.size:
-            return "s3://%s/%s"%(asset_object_prefix,image_name)
-        else:
-            return None
+        try:
+            s3_object_summary = s3.ObjectSummary(os.environ['MIND_TETHER_API_ASSETS'], "%s/%s" % (asset_file_path,image_name))
+            print(s3_object_summary.size)
+            return_path = "s3://%s/%s/%s"%(s3_object_summary.bucket_name,asset_object_prefix,image_name)
+            print(return_path)
+            return return_path
+        except botocore.exceptions.ClientError as e:
+            if e.response['Error']['Code'] == "404":
+                return None
+            else:
+                raise
         
 def generate_day_text(day:str, screen_width: int, screen_height: int):
     #Need to calculate some size values based on screen size. 
     #This is super early dev and will probs change
     text_img_bottom_y = screen_height - (screen_height * .25)
     text_img_top_y = screen_height - (screen_height * .30)
-    text_img_height = text_img_top_y - text_img_bottom_y
+    print ("upper y = %s and lower y = %s" %(text_img_top_y,text_img_bottom_y))
+    text_img_height =  int(text_img_bottom_y - text_img_top_y) # Pixel count starts at top left
+    print("Image height = %s" % text_img_height)
     text_img_width = screen_width
     text_img = Image.new('RGBA',(text_img_width,text_img_height))
     font_size = 1
     text_width_percent = .90
+    text_height_percent = .95
     draw = ImageDraw.Draw(text_img)
-    fnt = ImageDraw.truetype('/opt/%s/fonts/%s'%(os.environ['ASSET_LAYER_NAME'],MindTetherCore.Font.DEFAULT_FONT.FILE),
-                             font_size)
-    while fnt.getsize(day)[0] < text_width_percent*text_img.size[0]:
+    font_file=MindTetherCore.Font.DEFAULT_FONT.FILE
+    print("Font File Lives at %s"%font_file)
+    fnt = ImageFont.truetype(font_file,font_size)
+    while fnt.getsize(day)[0] < text_width_percent*text_img.size[0] and fnt.getsize(day)[1] < text_height_percent*text_img.size[1]:
         font_size += 1
-        fnt = ImageDraw.TrueType('/opt/%s/fonts/%s'%(os.environ['ASSET_LAYER_NAME'],MindTetherCore.Font.DEFAULT_FONT.FILE),
-                             font_size)
+        fnt = ImageFont.truetype(font_file,font_size)
     
-    draw.text((0,0),day.capitalize,font=fnt)
+    draw.text((1,1),day.capitalize(),font=fnt)
     file_name="%s@%s@%sx%s.png"%(day,default_font.NAME,screen_width,screen_height)
-    tmp_file_path = "/tmp/%s"%(file_name)
-    text_img.save(tmp_file_path,format="PNG")
+    buffer = BytesIO()
+    text_img.save(buffer,format="PNG")
+    text_img.close()
+    buffer.seek(0)
     s3 = boto3.resource("s3")
     s3_key="%s/%s"%(asset_object_prefix,file_name)
     s3_object = s3.Bucket(os.environ['MIND_TETHER_API_ASSETS']).put_object(
-        file=tmp_file_path,
-        key=s3_key
+        Body=buffer,
+        Key=s3_key
     )
     if s3_object and s3_object.content_length:
         return "%s/%s"%(asset_object_prefix,file_name)
@@ -59,10 +72,11 @@ def generate_day_text(day:str, screen_width: int, screen_height: int):
 
 
 def lambda_handler(event,context):
-    screen_width = event['screen_width']
-    screen_height = event['screen_height']
+    screen_width = int(event['screen_width'])
+    screen_height = int(event['screen_height'])
+    print("%sx%s"%(screen_width,screen_height))
     day=event['day']
-    day_text_image = get_exisiting_image(day,screen_height,screen_height)
+    day_text_image = get_exisiting_image(day,screen_width,screen_height)
     if day_text_image:
         return {
             "day_text_image" : day_text_image
