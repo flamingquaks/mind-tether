@@ -14,6 +14,6 @@ class MindTetherApiStage(Stage):
                                         tags={
                                             "app":"mindtether",
                                             "cost-center": "mindtether-api",
-                                            "stage_name": stage_name
+                                            "stage-name": stage_name
                                             }
         )
