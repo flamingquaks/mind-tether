@@ -29,7 +29,8 @@ def get_background_if_exists(width: int, height: int, day: str):
     else:
         try:
             s3 = boto3.resource("s3")
-            s3.Object(os.environ['MIND_TETHER_API_ASSETS'],'%s/%s' % (asset_object_prefix,image_name))
+            s3_object_summary = s3.ObjectSummary(os.environ['MIND_TETHER_API_ASSETS'],'%s/%s' % (asset_object_prefix,image_name))
+            print(s3_object_summary.size)
             return '%s/%s' % (asset_object_prefix,image_name)
         except botocore.exceptions.ClientError as e:
             if e.response['Error']['Code'] == "404":

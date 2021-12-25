@@ -8,6 +8,8 @@ from aws_cdk import (
 from app_cdk.cdk_pipeline_stack import CdkPipelineStack
 
 app = App()
-cdk_pipeline_stack = CdkPipelineStack(app, "MindTether")
+cdk_pipeline_stack = CdkPipelineStack(app, "MindTether", tags={
+    "app":"mind-tether"
+})
 
 app.synth()
