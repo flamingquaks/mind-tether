@@ -59,7 +59,6 @@ def generate_day_text(day:str, screen_width: int, screen_height: int):
 
 
 def lambda_handler(event,context):
-    background_image = event['bkg_file_location']
     screen_width = event['screen_width']
     screen_height = event['screen_height']
     day=event['day']
