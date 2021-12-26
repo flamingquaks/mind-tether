@@ -24,6 +24,8 @@ class MindTetherApiStack(Stack):
         if not stage_name:
             exit()
         
+        ## Define the Rest Api Gateway
+        api = apigw.RestApi(self,"MindTetherApi-%s"%(stage_name))
         
         if not self.node.try_get_context("short_url_host") or not self.node.try_get_context("api_host"):
             print("Missing values in cdk.json. Please check that short_url_host and api_host are provided.")
@@ -36,7 +38,7 @@ class MindTetherApiStack(Stack):
         asset_bucket.add_lifecycle_rule(abort_incomplete_multipart_upload_after=Duration.days(1),
                                         enabled=True)
                 
-        #Create the Lambda Layers
+        ###### Create Lambda Layers ######
         mindtether_assets_name="mindtether_assets"
         mindtether_assets = _lambda.LayerVersion(
             self, mindtether_assets_name, code=_lambda.Code.from_asset("lambda_layers/mindtether_assets_layer"),
@@ -64,7 +66,6 @@ class MindTetherApiStack(Stack):
             timeout=Duration.seconds(60)
         )
         
-        api = apigw.LambdaRestApi(self,"MindTetherApi-%s"%(stage_name),handler=generate_helper_image_lambda)
         
         ## Lambda:GenerateHelperImage - Add Lambda Layers
         generate_helper_image_lambda.add_layers(mindtether_assets)
@@ -182,10 +183,10 @@ class MindTetherApiStack(Stack):
         get_tether_requests_table.grant_read_data(get_tether_status_lambda)
         get_tether_state_machine.grant_read(get_tether_status_lambda)
         
-        get_tether_status_api_integration = apigw.LambdaIntegration(get_tether_status_lambda)
-        get_tether_status_api_resource = get_tether_entry_api_resource.add_resource("status")
+        # get_tether_status_api_integration = apigw.LambdaIntegration(get_tether_status_lambda)
+        # get_tether_status_api_resource = get_tether_entry_api_resource.add_resource("status")
         
-        get_tether_status_api_resource.add_method("GET",get_tether_status_api_integration)
+        # get_tether_status_api_resource.add_method("GET",get_tether_status_api_integration)
         
         
         
