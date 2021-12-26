@@ -5,6 +5,8 @@ from aws_cdk import (
     aws_s3 as s3,
     aws_apigateway as apigw,
     aws_lambda as _lambda,    
+    aws_stepfunctions as stepfunctions,
+    aws_stepfunctions_tasks as stepfunction_tasks
     # aws_lambda_python_alpha as python_lambda
 )
 
@@ -114,6 +116,30 @@ class MindTetherApiStack(Stack):
         get_day_image_lambda.add_environment("ASSET_LAYER_NAME", mindtether_assets_name)
         get_day_image_lambda.add_layers(mindtether_core,mindtether_assets)
         asset_bucket.grant_read_write(get_day_image_lambda)
+        
+        
+        get_background_image_info_task = stepfunction_tasks.LambdaInvoke(
+            self,"GetBkgImgInfoTask", lambda_function=get_background_image_info_lambda,
+            output_path="$.Payload"
+        )
+        
+        get_day_image_task = stepfunction_tasks.LambdaInvoke(
+            self,"GetDayImgTask", lambda_function=get_day_image_lambda,
+            input_path="$.Payload",
+            output_path="$.Payload"
+        )
+        
+        get_tether_state_machine_definition = get_background_image_info_task.next(get_day_image_task)
+        
+        get_tether_state_machine = stepfunctions.StateMachine(self,"GetTetherStateMachine",
+                                                              definition=get_tether_state_machine_definition,
+                                                              timeout=Duration.minutes(5))
+        
+        get_tether_state_machine_api_integration = apigw.StepFunctionsIntegration.start_execution(get_tether_state_machine)
+        get_tether_state_machine_api_resource = api.root.add_resource("get-tether")
+        
+        get_tether_state_machine_api_resource.add_method("GET",get_tether_state_machine_api_integration)
+        
 
         if(self.node.try_get_context("extended_mode") and self.node.try_get_context("extended_mode") == True):
             print("extended_mode == True")
