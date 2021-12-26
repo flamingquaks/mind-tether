@@ -6,11 +6,15 @@ from aws_cdk import (
     aws_apigateway as apigw,
     aws_lambda as _lambda,    
     aws_stepfunctions as stepfunctions,
-    aws_stepfunctions_tasks as stepfunction_tasks
+    aws_stepfunctions_tasks as stepfunction_tasks,
+    aws_dynamodb as dynamodb,
+    aws_iam as iam
     # aws_lambda_python_alpha as python_lambda
 )
 
+
 from constructs import Construct
+
 
 class MindTetherApiStack(Stack):
 
@@ -133,12 +137,56 @@ class MindTetherApiStack(Stack):
         
         get_tether_state_machine = stepfunctions.StateMachine(self,"GetTetherStateMachine",
                                                               definition=get_tether_state_machine_definition,
-                                                              timeout=Duration.minutes(5))
+                                                              timeout=Duration.minutes(5),
+                                                              state_machine_type=stepfunctions.StateMachineType.STANDARD)
         
-        get_tether_state_machine_api_integration = apigw.StepFunctionsIntegration.start_execution(get_tether_state_machine)
-        get_tether_state_machine_api_resource = api.root.add_resource("get-tether")
         
-        get_tether_state_machine_api_resource.add_method("GET",get_tether_state_machine_api_integration)
+        get_tether_requests_table = dynamodb.Table(
+            self,
+            "GetTetherRequests",
+            partition_key=dynamodb.Attribute(
+                name="requestId",
+                type=dynamodb.AttributeType.STRING
+            ),
+            time_to_live_attribute="ttl"
+        )
+        get_tether_entry_lambda = _lambda.Function(self,
+                                                   "get-tether-entry",
+                                                   code=_lambda.Code.from_asset("lambda/get_tether/get_tether_entry"),
+                                                   handler="app.lambda_handler",
+                                                   runtime=_lambda.Runtime.PYTHON_3_8)
+        
+        # get_tether_entry_lambda.role.add_managed_policy(ManagedPolicy.from_aws_managed_policy_name("AWSLambdaBasicExecutionRole"))
+        
+        get_tether_requests_table.grant_read_write_data(get_tether_entry_lambda)
+        get_tether_state_machine.grant_start_execution(get_tether_entry_lambda) 
+        
+        get_tether_entry_lambda.add_environment("REQUEST_TABLE_NAME", get_tether_requests_table.table_name)
+        get_tether_entry_lambda.add_environment("STATE_MACHINCE_ARN", get_tether_state_machine.state_machine_arn)
+            
+        
+        get_tether_entry_api_integration = apigw.LambdaIntegration(get_tether_entry_lambda)
+        get_tether_entry_api_resource = api.root.add_resource("get-tether")
+        
+        get_tether_entry_api_resource.add_method("GET",get_tether_entry_api_integration)
+        
+        get_tether_status_lambda = _lambda.Function(self,
+                                                    "get-tether-status",
+                                                    code=_lambda.Code.from_asset("lambda/get_tether/get_tether_status"),
+                                                    handler="app.lambda_handler",
+                                                    runtime=_lambda.Runtime.PYTHON_3_8)
+        
+        get_tether_status_lambda.add_environment("REQUEST_TABLE_NAME", get_tether_requests_table.table_name)
+        
+        get_tether_requests_table.grant_read_data(get_tether_status_lambda)
+        get_tether_state_machine.grant_read(get_tether_status_lambda)
+        
+        get_tether_status_api_integration = apigw.LambdaIntegration(get_tether_status_lambda)
+        get_tether_status_api_resource = get_tether_entry_api_resource.add_resource("status")
+        
+        get_tether_status_api_resource.add_method("GET",get_tether_status_api_integration)
+        
+        
         
 
         if(self.node.try_get_context("extended_mode") and self.node.try_get_context("extended_mode") == True):
