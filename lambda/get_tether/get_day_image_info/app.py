@@ -16,15 +16,20 @@ def get_exisiting_image(day:str, screen_width:int, screen_height:int):
     image_name = "%s@%sx%s.png"%(day,screen_width,screen_height)
     image_full_path= "%s/%s"%(asset_file_path,image_name)
     if os.path.exists(image_full_path):
-        return "%s/%s" % (asset_file_path,image_name)
+        return {
+            "location": "local",
+            "path": "%s/%s" % (asset_file_path,image_name)
+        }
     else:
         s3 = boto3.resource("s3")
         try:
             s3_object_summary = s3.ObjectSummary(os.environ['MIND_TETHER_API_ASSETS'], "%s/%s" % (asset_file_path,image_name))
             print(s3_object_summary.size)
-            return_path = "s3://%s/%s/%s"%(s3_object_summary.bucket_name,asset_object_prefix,image_name)
-            print(return_path)
-            return return_path
+            return {
+                "location":"s3",
+                "key": "%s/%s"%(asset_object_prefix,image_name),
+                "bucket":s3_object_summary.bucket_name
+            }
         except botocore.exceptions.ClientError as e:
             if e.response['Error']['Code'] == "404":
                 return None
@@ -65,26 +70,32 @@ def generate_day_text(day:str, screen_width: int, screen_height: int):
         Key=s3_key
     )
     if s3_object and s3_object.content_length:
-        return "%s/%s"%(asset_object_prefix,file_name)
+        return {
+            "location":"s3",
+            "key": "%s/%s"%(asset_object_prefix,file_name),
+            "bucket":os.environ['MIND_TETHER_API_ASSETS']
+        }
     else:
         return None;
 
 
 
 def lambda_handler(event,context):
-    screen_width = int(event['screen_width'])
-    screen_height = int(event['screen_height'])
-    print("%sx%s"%(screen_width,screen_height))
+    width = int(event['width'])
+    height = int(event['height'])
+    print("%sx%s"%(width,height))
     day=event['day']
-    day_text_image = get_exisiting_image(day,screen_width,screen_height)
+    day_text_image = get_exisiting_image(day,width,height)
     if day_text_image:
-        return {
-            "day_text_image" : day_text_image
-        }
-    elif day_text_image := generate_day_text(day,screen_width,screen_height):
-        return {
-            "day_text_image": day_text_image
-        }
+        return event.update({
+            "statusCode": 200,
+            "day_text_img" : day_text_image
+        })
+    elif day_text_image := generate_day_text(day,width,height):
+        return event.update({
+            "statusCode": 200,
+            "day_text_img": day_text_image
+        })
     else:
         return {
             "statusCode":500

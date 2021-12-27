@@ -17,8 +17,8 @@ def lambda_handler(event,context):
             height = event['queryStringParameters']['height']
             step_function_input = {
                 "day":day,
-                "screen_width": width,
-                "screen_height": height
+                "width": width,
+                "height": height
             }
             request_id = uuid4()
             stepfunctions_client = boto3.client("stepfunctions")
@@ -39,6 +39,13 @@ def lambda_handler(event,context):
                         "ttl": ttl_val
                     }
                 )
+                return {
+                    "requestId":request_id,
+                    "statusCode":200,
+                    "height":height,
+                    "width":width,
+                    "day":day
+                }
     else:
         return {
             "statusCode": 400   

@@ -25,13 +25,20 @@ def get_background_if_exists(width: int, height: int, day: str):
     image_name = "%s@%sx%s.jpeg" % (day,width,height)
     file_path = "%s/%s" % (asset_file_path,image_name)
     if os.path.exists(file_path):
-        return file_path
+        return {
+            "location" : "local",
+            "path":file_path
+        }
     else:
         try:
             s3 = boto3.resource("s3")
             s3_object_summary = s3.ObjectSummary(os.environ['MIND_TETHER_API_ASSETS'],'%s/%s' % (asset_object_prefix,image_name))
             print(s3_object_summary.size)
-            return '%s/%s' % (asset_object_prefix,image_name)
+            return {
+                "location" : "s3",
+                "key": '%s/%s' % (asset_object_prefix,image_name),
+                "bucket":os.environ['MIND_TETHER_API_ASSETS']
+            }
         except botocore.exceptions.ClientError as e:
             if e.response['Error']['Code'] == "404":
                 return None
@@ -61,7 +68,11 @@ def generate_new_background_image(width: int, height: int, day: str):
         Key="%s/%s" % (asset_object_prefix,image_name),
         Body=buffer)
     if s3_object.content_length > 0:
-        return "s3://%s/%s/%s" % (os.environ['MIND_TETHER_API_ASSETS'],asset_object_prefix,image_name)
+        return {
+            "location":"s3",
+            "key":"%s/%s" % (asset_object_prefix,image_name),
+            "bucket":os.environ['MIND_TETHER_API_ASSETS']
+        }
     else:
         return None
 
@@ -84,21 +95,22 @@ def lambda_handler(event,context):
         }
     
     if background := get_background_if_exists(width,height,day):
-        return {
+        
+        return event.update({
             "statusCode":200,
-            "bkg_file_location" : background,
-            "screen_width" : width,
-            "screen_height" : height,
+            "bkg_image" : background,
+            "width" : width,
+            "height" : height,
             "day": day
-        }
+        })
     elif background := generate_new_background_image(width,height,day):
-        return {
+        return event.update({
             "statusCode": 200,
-            "bkg_file_location": background,
+            "bkg_image": background,
             "screen_width" : width,
             "screen_height" : height,
             "day":day
-        }
+        })
     else:
         return {
             "statusCode": 400
