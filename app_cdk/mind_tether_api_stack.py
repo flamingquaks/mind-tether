@@ -183,10 +183,9 @@ class MindTetherApiStack(Stack):
         get_tether_state_machine.grant_read(get_tether_status_lambda)
         
         get_tether_status_api_integration = apigw.LambdaIntegration(get_tether_status_lambda)
-        get_tether_status_api_resource = get_tether_entry_api_resource.add_resource("status",default_integration=get_tether_entry_lambda)
+        get_tether_status_api_resource = get_tether_entry_api_resource.add_resource("status")
         
         get_tether_status_api_resource.add_method("GET",get_tether_status_api_integration)
-        
         
         
 
