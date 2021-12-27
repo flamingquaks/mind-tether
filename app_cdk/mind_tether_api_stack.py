@@ -7,8 +7,7 @@ from aws_cdk import (
     aws_lambda as _lambda,    
     aws_stepfunctions as stepfunctions,
     aws_stepfunctions_tasks as stepfunction_tasks,
-    aws_dynamodb as dynamodb,
-    aws_iam as iam
+    aws_dynamodb as dynamodb
     # aws_lambda_python_alpha as python_lambda
 )
 
@@ -183,10 +182,10 @@ class MindTetherApiStack(Stack):
         get_tether_requests_table.grant_read_data(get_tether_status_lambda)
         get_tether_state_machine.grant_read(get_tether_status_lambda)
         
-        # get_tether_status_api_integration = apigw.LambdaIntegration(get_tether_status_lambda)
-        # get_tether_status_api_resource = get_tether_entry_api_resource.add_resource("status")
+        get_tether_status_api_integration = apigw.LambdaIntegration(get_tether_status_lambda)
+        get_tether_status_api_resource = get_tether_entry_api_resource.add_resource("status",default_integration=get_tether_entry_lambda)
         
-        # get_tether_status_api_resource.add_method("GET",get_tether_status_api_integration)
+        get_tether_status_api_resource.add_method("GET",get_tether_status_api_integration)
         
         
         
