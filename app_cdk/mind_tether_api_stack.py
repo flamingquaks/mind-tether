@@ -90,7 +90,16 @@ class MindTetherApiStack(Stack):
         
         """V1 Lambdas
         """
-        
+                
+        get_tether_requests_table = dynamodb.Table(
+            self,
+            "GetTetherRequests",
+            partition_key=dynamodb.Attribute(
+                name="requestId",
+                type=dynamodb.AttributeType.STRING
+            ),
+            time_to_live_attribute="ttl"
+        )
         
         get_background_image_info_lambda = _lambda.Function(
             self,
@@ -122,35 +131,46 @@ class MindTetherApiStack(Stack):
         get_day_image_lambda.add_layers(mindtether_core,mindtether_assets)
         asset_bucket.grant_read_write(get_day_image_lambda)
         
+        compile_image_lambda = _lambda.Function(
+            self,
+            "CompileImg",
+            code=_lambda.Code.from_asset("lambda/get_tether/compile_image"),
+            runtime=_lambda.Runtime.PYTHON_3_8,
+            handler="app.lambda_hanlder",
+            timeout=Duration.seconds(60)
+        )
+        
+        compile_image_lambda.add_environment("MIND_TETHER_API_ASSETS",asset_bucket.bucket_name)
+        compile_image_lambda.add_environment("ASSET_LAYER_NAME", mindtether_assets_name)
+        compile_image_lambda.add_environment("REQUEST_TABLE_NAME", get_tether_requests_table.table_name)
+        compile_image_lambda.add_layers(mindtether_core,mindtether_assets)
+        asset_bucket.grant_read_write(compile_image_lambda)
+        get_tether_requests_table.grant_read_write_data(compile_image_lambda)        
+
+        
         
         get_background_image_info_task = stepfunction_tasks.LambdaInvoke(
-            self,"GetBkgImgInfoTask", lambda_function=get_background_image_info_lambda,
-            output_path="$.Payload"
+            self,"GetBkgImgInfoTask", lambda_function=get_background_image_info_lambda
         )
         
         get_day_image_task = stepfunction_tasks.LambdaInvoke(
-            self,"GetDayImgTask", lambda_function=get_day_image_lambda,
-            input_path="$.Payload",
-            output_path="$.Payload"
+            self,"GetDayImgTask", lambda_function=get_day_image_lambda
         )
         
-        get_tether_state_machine_definition = get_background_image_info_task.next(get_day_image_task)
+        compile_image_task = stepfunction_tasks.LambdaInvoke(
+            self,"CompileImgTask", lambda_function=compile_image_lambda
+        )
+        
+        get_tether_state_machine_definition = get_background_image_info_task\
+            .next(get_day_image_task) \
+            .next(compile_image_task)
         
         get_tether_state_machine = stepfunctions.StateMachine(self,"GetTetherStateMachine",
                                                               definition=get_tether_state_machine_definition,
                                                               timeout=Duration.minutes(5),
                                                               state_machine_type=stepfunctions.StateMachineType.STANDARD)
         
-        
-        get_tether_requests_table = dynamodb.Table(
-            self,
-            "GetTetherRequests",
-            partition_key=dynamodb.Attribute(
-                name="requestId",
-                type=dynamodb.AttributeType.STRING
-            ),
-            time_to_live_attribute="ttl"
-        )
+
         get_tether_entry_lambda = _lambda.Function(self,
                                                    "get-tether-entry",
                                                    code=_lambda.Code.from_asset("lambda/get_tether/get_tether_entry"),
@@ -180,7 +200,6 @@ class MindTetherApiStack(Stack):
         get_tether_status_lambda.add_environment("REQUEST_TABLE_NAME", get_tether_requests_table.table_name)
         
         get_tether_requests_table.grant_read_data(get_tether_status_lambda)
-        get_tether_state_machine.grant_read(get_tether_status_lambda)
         
         get_tether_status_api_integration = apigw.LambdaIntegration(get_tether_status_lambda)
         get_tether_status_api_resource = get_tether_entry_api_resource.add_resource("status")

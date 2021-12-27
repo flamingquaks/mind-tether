@@ -13,27 +13,20 @@ def lambda_handler(event,context):
                 "requestId":request_id
             }
         )
-        if dynamo_response:
-            execution_arn = dynamo_response['item']['stepFunctionExecutionArn']
-            if execution_arn:
-                sfn_client = boto3.client("sfn")
-                sfn_response = sfn_client.describe_execution(
-                    executionArn=execution_arn
-                )
-                if sfn_response and sfn_response['status']:
-                    execution_status = sfn_response['status']
-                    if execution_status == "RUNNING":
-                        return {
-                            "statusCode":200,
-                            "GetTetherState": "GeneratingTether"
-                        }
-                    elif execution_status == "SUCCEEDED":
-                        return {
-                            "statusCode":200,
-                            "GetTetherState": "TetherGenerated"
-                        }
-        
-        return {
-            "statusCode": 403
-        }
+        if dynamo_response and dynamo_response['Item'] and dynamo_response['Item']['status']:
+            if dynamo_response['Item']['status'] == "CREATED":
+                return {
+                "statusCode":200,
+                "status":dynamo_response['Item']['status'],
+                "url": dynamo_response['Item']['image_url']
+            }
+            else:
+                return {
+                    "statusCode":200,
+                    "status":dynamo_response['Item']['status']
+                }
+        else:
+            return {
+                "statusCode":500
+            }
             
