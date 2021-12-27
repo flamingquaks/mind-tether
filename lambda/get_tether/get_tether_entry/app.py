@@ -11,7 +11,7 @@ request_table_name = os.environ['REQUEST_TABLE_NAME']
 
 def lambda_handler(event,context):
     if event['queryStringParameters'] and event['queryStringParameters']['day'] and \
-        event['queryStringParameters']['width'] and event['queryStringParams']['height']:
+        event['queryStringParameters']['width'] and event['queryStringParameters']['height']:
             day = event['queryStringParameters']['day']
             width = event['queryStringParameters']['width']
             height = event['queryStringParameters']['height']
