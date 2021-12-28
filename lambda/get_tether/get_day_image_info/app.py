@@ -87,15 +87,13 @@ def lambda_handler(event,context):
     day=event['day']
     day_text_image = get_exisiting_image(day,width,height)
     if day_text_image:
-        return event.update({
-            "statusCode": 200,
-            "day_text_img" : day_text_image
-        })
+        event['day_text_img'] = day_text_image
+        event['statusCode'] = 200
+        return event
     elif day_text_image := generate_day_text(day,width,height):
-        return event.update({
-            "statusCode": 200,
-            "day_text_img": day_text_image
-        })
+        event['day_text_img'] = day_text_image
+        event['statusCode'] = 200
+        return event
     else:
         return {
             "statusCode":500

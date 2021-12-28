@@ -95,22 +95,13 @@ def lambda_handler(event,context):
         }
     
     if background := get_background_if_exists(width,height,day):
-        
-        return event.update({
-            "statusCode":200,
-            "bkg_image" : background,
-            "width" : width,
-            "height" : height,
-            "day": day
-        })
+        event['bkg_img'] = background
+        event['statusCode'] = 200
+        return event
     elif background := generate_new_background_image(width,height,day):
-        return event.update({
-            "statusCode": 200,
-            "bkg_image": background,
-            "screen_width" : width,
-            "screen_height" : height,
-            "day":day
-        })
+        event['bkg_img'] = background
+        event['statusCode'] = 200
+        return event
     else:
         return {
             "statusCode": 400
