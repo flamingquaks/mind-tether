@@ -2,6 +2,7 @@ import boto3
 import os
 from uuid import uuid4
 from datetime import datetime
+import json
 from datetime import timedelta
 
 
@@ -20,31 +21,36 @@ def lambda_handler(event,context):
                 "width": width,
                 "height": height
             }
-            request_id = uuid4()
+            request_id = str(uuid4())
             stepfunctions_client = boto3.client("stepfunctions")
             step_function_response = stepfunctions_client.start_execution(
                 stateMachineArn=state_machine_arn,
-                input=step_function_input
+                input=json.dumps(step_function_input)
             )
-            if step_function_response['ExecutionArn']:
+            if step_function_response['executionArn']:
                 request_time = datetime.now()
                 ttl_val = request_time + timedelta(minutes=15)
                 dynamodb_client = boto3.client("dynamodb")
                 dynamodb_client.put_item(
                     TableName=request_table_name,
                     Item={
-                        "requestId":request_id,
-                        "stepFunctionExecutionArn" : step_function_response['executionArn'],
-                        "status":"started",
-                        "ttl": ttl_val
+                        'requestId':{
+                            'S':request_id
+                            
+                        },
+                        'stepFunctionExecutionArn' : {'S':str(step_function_response['executionArn'])},
+                        'status':{'S':'started'},
+                        'ttl': {'S': str(ttl_val)}
                     }
                 )
                 return {
-                    "requestId":request_id,
                     "statusCode":200,
-                    "height":height,
-                    "width":width,
-                    "day":day
+                    "body": json.dumps({
+                        "requestId":request_id,
+                        "height":height,
+                        "width":width,
+                        "day":day
+                    })
                 }
     else:
         return {

@@ -82,7 +82,7 @@ def lambda_handler(event,context):
                 ':u': s3_presigned_url
             }
         )
-        return event
+        return 
         
         
         

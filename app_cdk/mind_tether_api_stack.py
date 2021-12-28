@@ -136,7 +136,7 @@ class MindTetherApiStack(Stack):
             "CompileImg",
             code=_lambda.Code.from_asset("lambda/get_tether/compile_image"),
             runtime=_lambda.Runtime.PYTHON_3_8,
-            handler="app.lambda_hanlder",
+            handler="app.lambda_handler",
             timeout=Duration.seconds(60)
         )
         

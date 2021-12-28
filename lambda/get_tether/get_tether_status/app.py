@@ -5,7 +5,7 @@ request_table_name = os.environ['REQUEST_TABLE_NAME']
 
 
 def lambda_handler(event,context):
-    if request_id := event['queryStringParams']['requestId']:
+    if request_id := event['queryStringParameters']['requestId']:
         dynamo_client = boto3.client("dynamodb")
         dynamo_response = dynamo_client.get_item(
             TableName=request_table_name,
