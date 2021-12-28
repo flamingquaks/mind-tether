@@ -22,6 +22,7 @@ def lambda_handler(event,context):
                 "height": height
             }
             request_id = str(uuid4())
+            event['requestId'] = request_id
             stepfunctions_client = boto3.client("stepfunctions")
             step_function_response = stepfunctions_client.start_execution(
                 stateMachineArn=state_machine_arn,
