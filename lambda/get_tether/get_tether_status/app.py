@@ -10,7 +10,7 @@ def lambda_handler(event,context):
         dynamo_response = dynamo_client.get_item(
             TableName=request_table_name,
             Key={
-                "requestId":request_id
+                "requestId":{"S": request_id}
             }
         )
         if dynamo_response and dynamo_response['Item'] and dynamo_response['Item']['status']:
