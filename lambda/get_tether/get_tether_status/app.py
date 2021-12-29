@@ -10,20 +10,24 @@ def lambda_handler(event,context):
         dynamo_response = dynamo_client.get_item(
             TableName=request_table_name,
             Key={
-                "requestId":request_id
+                "requestId":{"S": request_id}
             }
         )
-        if dynamo_response and dynamo_response['Item'] and dynamo_response['Item']['status']:
-            if dynamo_response['Item']['status'] == "CREATED":
+        print(dynamo_response)
+        if dynamo_response and dynamo_response['Item'] and dynamo_response['Item']['create_status']['S']:
+            if dynamo_response['Item']['create_status']['S'] == "CREATED":
                 return {
                 "statusCode":200,
-                "status":dynamo_response['Item']['status'],
-                "url": dynamo_response['Item']['image_url']
+                "status":dynamo_response['Item']['create_status']['S'],
+                "url": dynamo_response['Item']['image_url']['S']
             }
             else:
                 return {
                     "statusCode":200,
-                    "status":dynamo_response['Item']['status']
+                    "body":{
+                        "status": dynamo_response['Item']['create_status']['S']
+                    }
+
                 }
         else:
             return {

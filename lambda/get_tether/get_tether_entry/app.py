@@ -16,12 +16,13 @@ def lambda_handler(event,context):
             day = event['queryStringParameters']['day']
             width = event['queryStringParameters']['width']
             height = event['queryStringParameters']['height']
+            request_id=str(uuid4())
             step_function_input = {
                 "day":day,
                 "width": width,
-                "height": height
+                "height": height,
+                "requestId":request_id
             }
-            request_id = str(uuid4())
             event['requestId'] = request_id
             stepfunctions_client = boto3.client("stepfunctions")
             step_function_response = stepfunctions_client.start_execution(
@@ -35,12 +36,9 @@ def lambda_handler(event,context):
                 dynamodb_client.put_item(
                     TableName=request_table_name,
                     Item={
-                        'requestId':{
-                            'S':request_id
-                            
-                        },
+                        'requestId':{'S':request_id},
                         'stepFunctionExecutionArn' : {'S':str(step_function_response['executionArn'])},
-                        'status':{'S':'started'},
+                        'create_status':{'S':'IN_PROGRESS'},
                         'ttl': {'S': str(ttl_val)}
                     }
                 )
