@@ -18,7 +18,6 @@ def get_s3_image(key:str,bucket:str,type:str):
     
 
 def lambda_handler(event,context):
-    print("-A")
     if event.keys() >= {"width", "height","day", \
         "bkg_img", "day_text_img", "requestId"}:
         width = event['width']
@@ -34,19 +33,16 @@ def lambda_handler(event,context):
         if day_text_img['location'] == "s3":
             day_text_img['path'] = get_s3_image(day_text_img['key'],\
                 day_text_img['bucket'], "DAYTEXT")
-        print("A")
         bkg_image = Image.open(bkg_img['path']) 
         day_text_image = Image.open(day_text_img['path'])
         day_text_image_height = int(day_text_image.height)
         free_space_top_percent = 75
         free_space_bottom_percent = 90
-        print("B")
         free_space_top_y = int(height*free_space_top_percent/100)
         free_space_bottom_y = int(height*free_space_bottom_percent/100)
         
         vertical_offset = ((free_space_bottom_y-free_space_top_y) - day_text_image_height)/2
-        print("C")
-        bkg_image.paste(day_text_image,(int(free_space_top_y+vertical_offset),5),day_text_image)
+        bkg_image.paste(day_text_image,(int(5,free_space_top_y+vertical_offset)),day_text_image)
         day_text_image.close()
         image_name = "%s.jpeg"%(uuid4())
         buffer = BytesIO()
@@ -60,7 +56,6 @@ def lambda_handler(event,context):
             Key=asset_key,
             Body=buffer
         )
-        print("D")
         s3_presigned_url = s3.generate_presigned_url(
             'get_object', Params = {
                 'Bucket' : asset_bucket,
@@ -69,7 +64,6 @@ def lambda_handler(event,context):
         )
         
         event['generatedImageURL'] = s3_presigned_url
-        print("E")
         dynamodb = boto3.resource("dynamodb")
         table = dynamodb.Table(request_table_name)
         update_response = table.update_item(
