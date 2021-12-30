@@ -1,6 +1,7 @@
 from aws_cdk import (
     Duration,
     BundlingOptions,
+    RemovalPolicy,
     Stack,
     aws_s3 as s3,
     aws_apigateway as apigw,
@@ -33,7 +34,11 @@ class MindTetherApiStack(Stack):
             api_host = self.node.try_get_context("api_host")
 
         ## Create the S3 Asset Bucket
-        asset_bucket = s3.Bucket(self,"AssetBucket")
+        if stage_name == "dev":
+            removal_policy = RemovalPolicy.DESTROY
+        else:
+            removal_policy = RemovalPolicy.RETAIN
+        asset_bucket = s3.Bucket(self,"AssetBucket", removal_policy=removal_policy)
         asset_bucket.add_lifecycle_rule(abort_incomplete_multipart_upload_after=Duration.days(1),
                                         enabled=True)
                 

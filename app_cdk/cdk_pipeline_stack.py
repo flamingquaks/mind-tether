@@ -23,11 +23,10 @@ class CdkPipelineStack(Stack):
             description="The ARN for the GitHub connection"
         )
         
-        if not branch:
-            branch = "development"
-            stage_name = "dev"
-        elif branch == "main":
-            stage_name = "prod"
+        if branch == "main":
+            stage_name="prod"
+        else:
+            stage_name="dev"
         code_source = pipelines.CodePipelineSource.connection(
                     "flamingquaks/mind-tether", branch, connection_arn=connection_arn.value_as_string)
         build_spec = codebuild.BuildSpec.from_object({

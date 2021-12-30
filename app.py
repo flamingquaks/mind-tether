@@ -8,10 +8,10 @@ from aws_cdk import (
 from app_cdk.cdk_pipeline_stack import CdkPipelineStack
 
 app = App()
-mind_tether_dev_pipeline = CdkPipelineStack(app, "MindTether", branch="dev", tags={
+mind_tether_dev_pipeline = CdkPipelineStack(app, "MindTetherDev", branch="dev", tags={
     "app":"mind-tether"
 })
-mind_tether_prod_pipeline = CdkPipelineStack(app, "MindTether", branch="main", tags={
+mind_tether_prod_pipeline = CdkPipelineStack(app, "MindTetherProd", branch="main", tags={
     "app":"mind-tether"
 })
 
