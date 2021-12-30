@@ -4,9 +4,7 @@ from aws_cdk import (
     CfnParameter,
     Stack,
     pipelines,
-    aws_apigateway as apigw,
-    aws_codebuild as codebuild,
-    aws_codepipeline_actions as codepipeline_actions
+    aws_codebuild as codebuild
 )
 
 from constructs import Construct
@@ -15,7 +13,7 @@ from app_cdk.cdk_pipeline_stage import MindTetherApiStage
 
 class CdkPipelineStack(Stack):
 
-    def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
+    def __init__(self, scope: Construct, construct_id: str, branch:str = None, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
         
         connection_arn = CfnParameter(
@@ -25,7 +23,11 @@ class CdkPipelineStack(Stack):
             description="The ARN for the GitHub connection"
         )
         
-        branch="development"
+        if not branch:
+            branch = "development"
+            stage_name = "dev"
+        elif branch == "main":
+            stage_name = "prod"
         code_source = pipelines.CodePipelineSource.connection(
                     "flamingquaks/mind-tether", branch, connection_arn=connection_arn.value_as_string)
         build_spec = codebuild.BuildSpec.from_object({
@@ -62,18 +64,4 @@ class CdkPipelineStack(Stack):
         
 
         
-        dev_stage = pipeline.add_stage(MindTetherApiStage(self,"MindTether-Dev", "dev"))
-        dev_stage.add_post(pipelines.ManualApprovalStep(
-            "Review Code and Authorize Release to Production"
-            )
-            
-        )
-        
-        prod_stage = pipeline.add_stage(MindTetherApiStage(self,"MindTether-Prod", "prod"))
-
-        # 
-        # dev_stage = Stage(self,"DevStage")
-    
-        # prod_stage = CdkPipelineStage(self,"prod")
-        
-        
+        mind_tether_api_stage = pipeline.add_stage(MindTetherApiStage(self,"MindTether-%s"%(stage_name), stage_name))        
