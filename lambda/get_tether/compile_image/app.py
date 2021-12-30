@@ -36,8 +36,8 @@ def lambda_handler(event,context):
         bkg_image = Image.open(bkg_img['path']) 
         day_text_image = Image.open(day_text_img['path'])
         day_text_image_height = int(day_text_image.height)
-        free_space_top_percent = 75
-        free_space_bottom_percent = 90
+        free_space_top_percent = 65
+        free_space_bottom_percent = 80
         free_space_top_y = int(height*free_space_top_percent/100)
         free_space_bottom_y = int(height*free_space_bottom_percent/100)
         
