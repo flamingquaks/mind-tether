@@ -8,8 +8,9 @@ from aws_cdk import (
     aws_lambda as _lambda,    
     aws_stepfunctions as stepfunctions,
     aws_stepfunctions_tasks as stepfunction_tasks,
-    aws_dynamodb as dynamodb
-    # aws_lambda_python_alpha as python_lambda
+    aws_dynamodb as dynamodb,
+    aws_cloudfront as cloudfront,
+    aws_cloudfront_origins as cloudfront_origins
 )
 
 
@@ -27,11 +28,19 @@ class MindTetherApiStack(Stack):
         ## Define the Rest Api Gateway
         api = apigw.RestApi(self,"MindTetherApi-%s"%(stage_name))
         
+        # This will be phased out with the completion on get-tether and subsequent shortcut update.
         if not self.node.try_get_context("short_url_host") or not self.node.try_get_context("api_host"):
             print("Missing values in cdk.json. Please check that short_url_host and api_host are provided.")
         else:
             short_url_host = self.node.try_get_context("short_url_host")
             api_host = self.node.try_get_context("api_host")
+            
+            
+        ## Get context for the current stage:
+        if stack_context := self.node.try_get_context(stage_name):
+            api_host = stack_context['api_host']
+            api_stage = stack_context['stage']
+            short_url_host = stack_context['short_url_host']
 
         ## Create the S3 Asset Bucket
         if stage_name == "dev":
@@ -174,7 +183,7 @@ class MindTetherApiStack(Stack):
         
         get_tether_state_machine = stepfunctions.StateMachine(self,"GetTetherStateMachine",
                                                               definition=get_tether_state_machine_definition,
-                                                              timeout=Duration.minutes(5),
+                                                              timeout=Duration.days(1),
                                                               state_machine_type=stepfunctions.StateMachineType.STANDARD)
         
 
@@ -212,7 +221,51 @@ class MindTetherApiStack(Stack):
         get_tether_status_api_resource = get_tether_entry_api_resource.add_resource("{requestId}")
         
         get_tether_status_api_resource.add_method("GET",get_tether_status_api_integration)
+    
         
+        ## Now we are creating the infrastructure to support our URL shortener
+        
+        redirect_asset_bucket = s3.Bucket(self,"REDIRECT_ASSET_BUCKET",
+                                          removal_policy=RemovalPolicy.DESTROY,
+                                          encryption=s3.BucketEncryption.S3_MANAGED,
+                                          website_index_document="index.html",
+                                          lifecycle_rules=[s3.LifecycleRule(
+                                              abort_incomplete_multipart_upload_after=Duration.days(1),
+                                              expiration=Duration.days(1),
+                                              prefix="u/",
+                                              enabled=True,
+                                              id="expireOldRedirects"
+                                          )])
+        
+          ##redirector API function:
+        redirect_lambda = _lambda.Function(
+            self,
+            "RedirectFunction",
+            code=_lambda.Code.from_asset("lambda/short_url_redirect"),
+            handler="app.lambda_hanlder",
+            runtime=_lambda.Runtime.PYTHON_3_8
+        )
+        
+        redirect_lambda.add_environment("REDIRECT_ASSET_BUCKET", redirect_asset_bucket.bucket_name)
+        redirect_asset_bucket.grant_read(redirect_lambda)
+        
+        redirect_api_integration = apigw.LambdaIntegration(redirect_lambda)
+        redirect_root_resource = api.root.add_resource("redirect")
+        redirect_key_resource = redirect_root_resource.add_resource("{key}")
+        redirect_key_resource.add_method("GET",redirect_api_integration)
+        
+        cloudfront_origin = cloudfront_origins.HttpOrigin(domain_name=api_host)
+        
+        redirect_cloudfront_distribution = cloudfront.Distribution(
+            self,
+            "RedirectCloudFront",
+            domain_names=[short_url_host],
+            default_behavior=cloudfront.BehaviorOptions(
+                allowed_methods=cloudfront.AllowedMethods.ALLOW_GET_HEAD,
+                origin=cloudfront_origin
+            )
+            
+        )
         
 
         if(self.node.try_get_context("extended_mode") and self.node.try_get_context("extended_mode") == True):
