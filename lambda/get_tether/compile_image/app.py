@@ -42,7 +42,7 @@ def lambda_handler(event,context):
         free_space_bottom_y = int(height*free_space_bottom_percent/100)
         
         vertical_offset = ((free_space_bottom_y-free_space_top_y) - day_text_image_height)/2
-        bkg_image.paste(day_text_image,(int(5,free_space_top_y+vertical_offset)),day_text_image)
+        bkg_image.paste(day_text_image,(5,int(free_space_top_y+vertical_offset)),day_text_image)
         day_text_image.close()
         image_name = "%s.jpeg"%(uuid4())
         buffer = BytesIO()

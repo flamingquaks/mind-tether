@@ -159,11 +159,13 @@ class MindTetherApiStack(Stack):
         )
         
         get_day_image_task = stepfunction_tasks.LambdaInvoke(
-            self,"GetDayImgTask", lambda_function=get_day_image_lambda
+            self,"GetDayImgTask", lambda_function=get_day_image_lambda,
+            input_path="$.Payload"
         )
         
         compile_image_task = stepfunction_tasks.LambdaInvoke(
-            self,"CompileImgTask", lambda_function=compile_image_lambda
+            self,"CompileImgTask", lambda_function=compile_image_lambda,
+            input_path="$.Payload"
         )
         
         get_tether_state_machine_definition = get_background_image_info_task\
