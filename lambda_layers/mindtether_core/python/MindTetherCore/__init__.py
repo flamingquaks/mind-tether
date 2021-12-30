@@ -11,9 +11,12 @@ _font_dir = path.join("/opt/%s" % (environ['ASSET_LAYER_NAME']),"fonts")
 class Font():
     def __init__(self) -> None:
         pass
+    class THE_BOLD_FONT:
+        FILE = "%s/theboldfont.ttf" % (_font_dir)
+        NAME = "TheBoldFont"
     
-    THE_BOLD_FONT = "%s/theboldfont.ttf" % (_font_dir)
     DEFAULT_FONT = THE_BOLD_FONT
+    
     
 class Day():
     __days = {
@@ -45,5 +48,5 @@ class Day():
     
     
     @classmethod
-    def get_day_color(day: str):
-        return Day.__days[day.lower]['color']
+    def get_day_color(self, day: str):
+        return Day.__days[day.lower()]['color']
