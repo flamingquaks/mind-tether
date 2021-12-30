@@ -1,6 +1,7 @@
 from aws_cdk import (
     Duration,
     BundlingOptions,
+    RemovalPolicy,
     Stack,
     aws_s3 as s3,
     aws_apigateway as apigw,
@@ -33,7 +34,11 @@ class MindTetherApiStack(Stack):
             api_host = self.node.try_get_context("api_host")
 
         ## Create the S3 Asset Bucket
-        asset_bucket = s3.Bucket(self,"AssetBucket")
+        if stage_name == "dev":
+            removal_policy = RemovalPolicy.DESTROY
+        else:
+            removal_policy = RemovalPolicy.RETAIN
+        asset_bucket = s3.Bucket(self,"AssetBucket", removal_policy=removal_policy)
         asset_bucket.add_lifecycle_rule(abort_incomplete_multipart_upload_after=Duration.days(1),
                                         enabled=True)
                 
@@ -150,21 +155,17 @@ class MindTetherApiStack(Stack):
         
         
         get_background_image_info_task = stepfunction_tasks.LambdaInvoke(
-            self,"GetBkgImgInfoTask", lambda_function=get_background_image_info_lambda,
-            input_path="$.Payload",
-            output_path="$.Payload"
+            self,"GetBkgImgInfoTask", lambda_function=get_background_image_info_lambda
         )
         
         get_day_image_task = stepfunction_tasks.LambdaInvoke(
             self,"GetDayImgTask", lambda_function=get_day_image_lambda,
-            input_path="$.Payload",
-            output_path="$.Payload"
+            input_path="$.Payload"
         )
         
         compile_image_task = stepfunction_tasks.LambdaInvoke(
             self,"CompileImgTask", lambda_function=compile_image_lambda,
-            input_path="$.Payload",
-            output_path="$.Payload"
+            input_path="$.Payload"
         )
         
         get_tether_state_machine_definition = get_background_image_info_task\
