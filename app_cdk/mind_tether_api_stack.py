@@ -48,7 +48,7 @@ class MindTetherApiStack(Stack):
             cert_arn_string = stack_context['cert_arn']
             
         if cert_arn_string:
-            cert_arn = ssm.StringParameter.from_string_parameter_name(self,"certParam", string_parameter_name=cert_arn)
+            cert_arn = ssm.StringParameter.from_string_parameter_name(self,"certParam", string_parameter_name=cert_arn_string).string_value
         else:
             exit()
 
@@ -274,7 +274,7 @@ class MindTetherApiStack(Stack):
             default_behavior=cloudfront.BehaviorOptions(
                 allowed_methods=cloudfront.AllowedMethods.ALLOW_GET_HEAD,
                 origin=cloudfront_origin
-            ), certificate=acm.Certificate.from_certificate_arn(cert_arn)
+            ), certificate=acm.Certificate.from_certificate_arn(self,"CERT",cert_arn)
             
         )
         
