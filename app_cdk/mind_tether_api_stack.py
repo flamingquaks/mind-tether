@@ -48,8 +48,10 @@ class MindTetherApiStack(Stack):
             short_url_host = stack_context['short_url_host']
             cert_arn_string = stack_context['cert_arn']
             
+            
         if cert_arn_string:
-            cert_arn = ssm.StringParameter.from_string_parameter_name(self,"certParam", string_parameter_name=cert_arn_string).string_value
+            cert_arn = ssm.StringParameter.from_string_parameter_name(self,"certParam", string_parameter_name=cert_arn_string)
+            cert = acm.Certificate.from_certificate_arn(self, "short_link_cert",cert_arn.string_value)
         else:
             exit()
 
@@ -275,7 +277,7 @@ class MindTetherApiStack(Stack):
             default_behavior=cloudfront.BehaviorOptions(
                 allowed_methods=cloudfront.AllowedMethods.ALLOW_GET_HEAD,
                 origin=cloudfront_origin
-            ), certificate=acm.Certificate.from_certificate_arn(self,"CERT",cert_arn)
+            ), certificate=cert
             
         )
         
