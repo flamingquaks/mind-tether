@@ -53,7 +53,7 @@ class MindTetherApiStack(Stack):
         if cert_arn_string:
             cert_arn = ssm.StringParameter.from_string_parameter_name(self,"certParam", string_parameter_name=cert_arn_string)
             cert = acm.Certificate.from_certificate_arn(self, "short_link_cert",cert_arn.string_value)
-            CfnOutput(self,"cert_output",export_name="cert_output",value=cert.certificate_arn)
+            CfnOutput(self,"cert_output",export_name="certoutput",value=cert.certificate_arn)
         else:
             exit()
 
