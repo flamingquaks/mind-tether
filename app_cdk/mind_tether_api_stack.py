@@ -35,8 +35,9 @@ class MindTetherApiStack(Stack):
         # This will be phased out with the completion on get-tether and subsequent shortcut update.
         if not self.node.try_get_context("short_url_host") or not self.node.try_get_context("api_host"):
             print("Missing values in cdk.json. Please check that short_url_host and api_host are provided.")
+            exit()
         else:
-            short_url_host = self.node.try_get_context("short_url_host")
+            short_url_host_old = self.node.try_get_context("short_url_host")
             api_host = self.node.try_get_context("api_host")
             
             
@@ -97,8 +98,8 @@ class MindTetherApiStack(Stack):
         
         ## Lambda:GenerateHelperImage - Add Environment Variables
         generate_helper_image_lambda.add_environment("S3_BUCKET", asset_bucket.bucket_name)
-        generate_helper_image_lambda.add_environment("SHORTENER_URL","https://%s/admin_shrink_url"%(short_url_host))
-        generate_helper_image_lambda.add_environment("CDN_PREFIX",short_url_host)
+        generate_helper_image_lambda.add_environment("SHORTENER_URL","https://%s/admin_shrink_url"%(short_url_host_old))
+        generate_helper_image_lambda.add_environment("CDN_PREFIX",short_url_host_old)
         
         ## Lambda:GenerateHelperImage - Grant access to asset_bucket (s3)
         asset_bucket.grant_read(generate_helper_image_lambda)
