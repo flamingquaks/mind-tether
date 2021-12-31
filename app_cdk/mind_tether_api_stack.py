@@ -10,7 +10,9 @@ from aws_cdk import (
     aws_stepfunctions_tasks as stepfunction_tasks,
     aws_dynamodb as dynamodb,
     aws_cloudfront as cloudfront,
-    aws_cloudfront_origins as cloudfront_origins
+    aws_cloudfront_origins as cloudfront_origins,
+    aws_certificatemanager as acm,
+    aws_ssm as ssm
 )
 
 
@@ -24,6 +26,8 @@ class MindTetherApiStack(Stack):
         
         if not stage_name:
             exit()
+            
+        
         
         ## Define the Rest Api Gateway
         api = apigw.RestApi(self,"MindTetherApi-%s"%(stage_name))
@@ -41,6 +45,12 @@ class MindTetherApiStack(Stack):
             api_host = stack_context['api_host']
             api_stage = stack_context['stage']
             short_url_host = stack_context['short_url_host']
+            cert_arn_string = stack_context['cert_arn']
+            
+        if cert_arn_string:
+            cert_arn = ssm.StringParameter.from_string_parameter_name(self,"certParam", string_parameter_name=cert_arn)
+        else:
+            exit()
 
         ## Create the S3 Asset Bucket
         if stage_name == "dev":
@@ -256,6 +266,7 @@ class MindTetherApiStack(Stack):
         
         cloudfront_origin = cloudfront_origins.HttpOrigin(domain_name=api_host)
         
+        
         redirect_cloudfront_distribution = cloudfront.Distribution(
             self,
             "RedirectCloudFront",
@@ -263,7 +274,7 @@ class MindTetherApiStack(Stack):
             default_behavior=cloudfront.BehaviorOptions(
                 allowed_methods=cloudfront.AllowedMethods.ALLOW_GET_HEAD,
                 origin=cloudfront_origin
-            )
+            ), certificate=acm.Certificate.from_certificate_arn(cert_arn)
             
         )
         
