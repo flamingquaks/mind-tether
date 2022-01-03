@@ -66,6 +66,18 @@ class MindTetherApiStack(Stack):
         asset_bucket.add_lifecycle_rule(abort_incomplete_multipart_upload_after=Duration.days(1),
                                         enabled=True)
                 
+        short_url_bucket = s3.Bucket(self,"REDIRECT_ASSET_BUCKET",
+                                          removal_policy=RemovalPolicy.DESTROY,
+                                          encryption=s3.BucketEncryption.S3_MANAGED,
+                                          website_index_document="index.html",
+                                          lifecycle_rules=[s3.LifecycleRule(
+                                              abort_incomplete_multipart_upload_after=Duration.days(1),
+                                              expiration=Duration.days(1),
+                                              prefix="u/",
+                                              enabled=True,
+                                              id="expireOldRedirects"
+                                          )])
+        
         ###### Create Lambda Layers ######
         mindtether_assets_name="mindtether_assets"
         mindtether_assets = _lambda.LayerVersion(
@@ -172,6 +184,8 @@ class MindTetherApiStack(Stack):
         compile_image_lambda.add_environment("MIND_TETHER_API_ASSETS",asset_bucket.bucket_name)
         compile_image_lambda.add_environment("ASSET_LAYER_NAME", mindtether_assets_name)
         compile_image_lambda.add_environment("REQUEST_TABLE_NAME", get_tether_requests_table.table_name)
+        compile_image_lambda.add_environment("SHORT_URL_HOST", short_url_host)
+        compile_image_lambda.add_environment("SHORT_URL_BUCKET", short_url_bucket)
         compile_image_lambda.add_layers(mindtether_core,mindtether_assets)
         asset_bucket.grant_read_write(compile_image_lambda)
         get_tether_requests_table.grant_read_write_data(compile_image_lambda)        
@@ -240,18 +254,7 @@ class MindTetherApiStack(Stack):
         
         ## Now we are creating the infrastructure to support our URL shortener
         
-        redirect_asset_bucket = s3.Bucket(self,"REDIRECT_ASSET_BUCKET",
-                                          removal_policy=RemovalPolicy.DESTROY,
-                                          encryption=s3.BucketEncryption.S3_MANAGED,
-                                          website_index_document="index.html",
-                                          lifecycle_rules=[s3.LifecycleRule(
-                                              abort_incomplete_multipart_upload_after=Duration.days(1),
-                                              expiration=Duration.days(1),
-                                              prefix="u/",
-                                              enabled=True,
-                                              id="expireOldRedirects"
-                                          )])
-        
+       
           ##redirector API function:
         redirect_lambda = _lambda.Function(
             self,
@@ -261,8 +264,8 @@ class MindTetherApiStack(Stack):
             runtime=_lambda.Runtime.PYTHON_3_8
         )
         
-        redirect_lambda.add_environment("REDIRECT_ASSET_BUCKET", redirect_asset_bucket.bucket_name)
-        redirect_asset_bucket.grant_read(redirect_lambda)
+        redirect_lambda.add_environment("REDIRECT_ASSET_BUCKET", short_url_bucket.bucket_name)
+        short_url_bucket.grant_read(redirect_lambda)
         
         redirect_api_integration = apigw.LambdaIntegration(redirect_lambda)
         redirect_root_resource = api.root.add_resource("redirect")
