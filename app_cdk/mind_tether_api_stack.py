@@ -185,7 +185,7 @@ class MindTetherApiStack(Stack):
         compile_image_lambda.add_environment("ASSET_LAYER_NAME", mindtether_assets_name)
         compile_image_lambda.add_environment("REQUEST_TABLE_NAME", get_tether_requests_table.table_name)
         compile_image_lambda.add_environment("SHORT_URL_HOST", short_url_host)
-        compile_image_lambda.add_environment("SHORT_URL_BUCKET", short_url_bucket)
+        compile_image_lambda.add_environment("SHORT_URL_BUCKET", short_url_bucket.bucket_name)
         compile_image_lambda.add_layers(mindtether_core,mindtether_assets)
         asset_bucket.grant_read_write(compile_image_lambda)
         get_tether_requests_table.grant_read_write_data(compile_image_lambda)        
@@ -286,27 +286,7 @@ class MindTetherApiStack(Stack):
         )
         
 
-        if(self.node.try_get_context("extended_mode") and self.node.try_get_context("extended_mode") == True):
-            print("extended_mode == True")
-            ## URLShortener
-            ## URLShortner:S3 Bucket
-            shortener_bucket = s3.Bucket(self,"URLShortnerBucket")
-            shortener_bucket.add_lifecycle_rule(self,enabled=True,expiration=Duration.minutes(5))
-            
-            # ## URLShortener:LambdaShortener
-            # url_shortener_lambda = _lambda.Function(self,
-            #                                         "ShortenURL",
-            #                                         runtime=_lambda.Runtime.PYTHON_3_8,
-            #                                         code=_lambda.Code.from_asset(path="lambda/shorten_url", bundling=BundlingOptions(
-            #                                             command=["bash", "-c", "pip install -r requirements.txt -t /asset-output && cp -au . /asset-output"],
-            #                                             image=_lambda.Runtime.PYTHON_3_8.bundling_image)),
-            #                                         handler="lambda_handler",
-            #                                         timeout=Duration.seconds(30)
-                                                                
-            # )    
-
-            # shortener_bucket.grant_read_write(url_shortener_lambda)
-        
+                
         # Version based on context
         if self.node.try_get_context("deployment") == "prod":
             generate_helper_image_lambda_version = _lambda.Version(self,'GenerateHelperImageV1', function=generate_helper_image_lambda)
