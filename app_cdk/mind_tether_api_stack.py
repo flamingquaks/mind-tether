@@ -278,10 +278,11 @@ class MindTetherApiStack(Stack):
         redirect_cloudfront_distribution = cloudfront.Distribution(
             self,
             "RedirectCloudFront",
+            comment="RedirectCloudFront for MindTether %s" % (stage_name),
             default_behavior=cloudfront.BehaviorOptions(
                 allowed_methods=cloudfront.AllowedMethods.ALLOW_GET_HEAD,
                 origin=cloudfront_origin
-            )
+            ),
             
         )
         
