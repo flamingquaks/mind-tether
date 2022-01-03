@@ -58,7 +58,7 @@ class URLShortener:
     def __init__(self) -> None:
         pass
     
-    def shorten_url(long_url:str, short_url_bucket:str = environ['SHORT_URL_BUCKET'], short_url_host:str = ['SHORT_URL_HOST']):
+    def shorten_url(long_url:str, short_url_bucket:str, short_url_host:str):
         """URLShortener.shorten_url
         
         This takes the long URL and generates a URL shortener link.
@@ -83,8 +83,11 @@ class URLShortener:
         if not long_url:
             raise Exception("Missing long URL!")
         if not short_url_bucket or not short_url_host:
-            raise Exception("Error! Either the short_url_bucket or short_url_host values were not provided \
-                and were not set in the environment variables.")
+            short_url_bucket = environ['SHORT_URL_BUCKET']
+            short_url_host = environ['SHORT_URL_HOST']
+            if not short_url_bucket or not short_url_host:
+                raise Exception("Error! Either the short_url_bucket or short_url_host values were not provided \
+                    and were not set in the environment variables.")
         
         # generate a random string of n characters, lowercase and numbers
         def generate_random(n):
