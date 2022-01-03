@@ -50,12 +50,12 @@ class MindTetherApiStack(Stack):
             cert_arn_string = stack_context['cert_arn']
             
             
-        if cert_arn_string:
-            cert_arn = ssm.StringParameter.from_string_parameter_name(self,"certParam", string_parameter_name=cert_arn_string)
-            cert = acm.Certificate.from_certificate_arn(self, "short_link_cert",cert_arn.string_value)
-            CfnOutput(self,"cert_output",export_name="certoutput",value=cert.certificate_arn)
-        else:
-            exit()
+        # if cert_arn_string:
+        #     cert_arn = ssm.StringParameter.from_string_parameter_name(self,"certParam", string_parameter_name=cert_arn_string)
+        #     cert = acm.Certificate.from_certificate_arn(self, "short_link_cert",cert_arn.string_value)
+        #     CfnOutput(self,"cert_output",export_name="certoutput",value=cert.certificate_arn)
+        # else:
+        #     exit()
 
         ## Create the S3 Asset Bucket
         if stage_name == "dev":
@@ -275,11 +275,10 @@ class MindTetherApiStack(Stack):
         redirect_cloudfront_distribution = cloudfront.Distribution(
             self,
             "RedirectCloudFront",
-            domain_names=[short_url_host],
             default_behavior=cloudfront.BehaviorOptions(
                 allowed_methods=cloudfront.AllowedMethods.ALLOW_GET_HEAD,
                 origin=cloudfront_origin
-            ), certificate=cert
+            )
             
         )
         
