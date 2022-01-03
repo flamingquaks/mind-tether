@@ -3,6 +3,7 @@ from uuid import uuid4
 from PIL import Image
 from io import BytesIO
 from os import environ
+from MindTetherCore import URLShortener
 
 
 asset_bucket = environ['MIND_TETHER_API_ASSETS']
@@ -64,6 +65,7 @@ def lambda_handler(event,context):
         )
         
         event['generatedImageURL'] = s3_presigned_url
+        short_url = URLShortener.shorten_url(s3_presigned_url)
         dynamodb = boto3.resource("dynamodb")
         table = dynamodb.Table(request_table_name)
         update_response = table.update_item(
@@ -73,7 +75,7 @@ def lambda_handler(event,context):
             UpdateExpression="set create_status=:s, image_url=:u",
             ExpressionAttributeValues={
                 ':s': "COMPLETE",
-                ':u': s3_presigned_url
+                ':u': short_url
             }
         )
         return event

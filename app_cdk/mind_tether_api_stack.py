@@ -1,4 +1,5 @@
 from aws_cdk import (
+    CfnOutput,
     Duration,
     BundlingOptions,
     RemovalPolicy,
@@ -8,8 +9,11 @@ from aws_cdk import (
     aws_lambda as _lambda,    
     aws_stepfunctions as stepfunctions,
     aws_stepfunctions_tasks as stepfunction_tasks,
-    aws_dynamodb as dynamodb
-    # aws_lambda_python_alpha as python_lambda
+    aws_dynamodb as dynamodb,
+    aws_cloudfront as cloudfront,
+    aws_cloudfront_origins as cloudfront_origins,
+    aws_certificatemanager as acm,
+    aws_ssm as ssm
 )
 
 
@@ -23,15 +27,35 @@ class MindTetherApiStack(Stack):
         
         if not stage_name:
             exit()
+            
+        
         
         ## Define the Rest Api Gateway
         api = apigw.RestApi(self,"MindTetherApi-%s"%(stage_name))
         
+        # This will be phased out with the completion on get-tether and subsequent shortcut update.
         if not self.node.try_get_context("short_url_host") or not self.node.try_get_context("api_host"):
             print("Missing values in cdk.json. Please check that short_url_host and api_host are provided.")
+            exit()
         else:
-            short_url_host = self.node.try_get_context("short_url_host")
+            short_url_host_old = self.node.try_get_context("short_url_host")
             api_host = self.node.try_get_context("api_host")
+            
+            
+        ## Get context for the current stage:
+        if stack_context := self.node.try_get_context(stage_name):
+            api_host = stack_context['api_host']
+            api_stage = stack_context['stage']
+            short_url_host = stack_context['short_url_host']
+            cert_arn_string = stack_context['cert_arn']
+            
+            
+        # if cert_arn_string:
+        #     cert_arn = ssm.StringParameter.from_string_parameter_name(self,"certParam", string_parameter_name=cert_arn_string)
+        #     cert = acm.Certificate.from_certificate_arn(self, "short_link_cert",cert_arn.string_value)
+        #     CfnOutput(self,"cert_output",export_name="certoutput",value=cert.certificate_arn)
+        # else:
+        #     exit()
 
         ## Create the S3 Asset Bucket
         if stage_name == "dev":
@@ -42,6 +66,18 @@ class MindTetherApiStack(Stack):
         asset_bucket.add_lifecycle_rule(abort_incomplete_multipart_upload_after=Duration.days(1),
                                         enabled=True)
                 
+        short_url_bucket = s3.Bucket(self,"REDIRECT_ASSET_BUCKET",
+                                          removal_policy=RemovalPolicy.DESTROY,
+                                          encryption=s3.BucketEncryption.S3_MANAGED,
+                                          website_index_document="index.html",
+                                          lifecycle_rules=[s3.LifecycleRule(
+                                              abort_incomplete_multipart_upload_after=Duration.days(1),
+                                              expiration=Duration.days(1),
+                                              prefix="u/",
+                                              enabled=True,
+                                              id="expireOldRedirects"
+                                          )])
+        
         ###### Create Lambda Layers ######
         mindtether_assets_name="mindtether_assets"
         mindtether_assets = _lambda.LayerVersion(
@@ -78,8 +114,8 @@ class MindTetherApiStack(Stack):
         
         ## Lambda:GenerateHelperImage - Add Environment Variables
         generate_helper_image_lambda.add_environment("S3_BUCKET", asset_bucket.bucket_name)
-        generate_helper_image_lambda.add_environment("SHORTENER_URL","https://%s/admin_shrink_url"%(short_url_host))
-        generate_helper_image_lambda.add_environment("CDN_PREFIX",short_url_host)
+        generate_helper_image_lambda.add_environment("SHORTENER_URL","https://%s/admin_shrink_url"%(short_url_host_old))
+        generate_helper_image_lambda.add_environment("CDN_PREFIX",short_url_host_old)
         
         ## Lambda:GenerateHelperImage - Grant access to asset_bucket (s3)
         asset_bucket.grant_read(generate_helper_image_lambda)
@@ -148,6 +184,8 @@ class MindTetherApiStack(Stack):
         compile_image_lambda.add_environment("MIND_TETHER_API_ASSETS",asset_bucket.bucket_name)
         compile_image_lambda.add_environment("ASSET_LAYER_NAME", mindtether_assets_name)
         compile_image_lambda.add_environment("REQUEST_TABLE_NAME", get_tether_requests_table.table_name)
+        compile_image_lambda.add_environment("SHORT_URL_HOST", short_url_host)
+        compile_image_lambda.add_environment("SHORT_URL_BUCKET", short_url_bucket.bucket_name)
         compile_image_lambda.add_layers(mindtether_core,mindtether_assets)
         asset_bucket.grant_read_write(compile_image_lambda)
         get_tether_requests_table.grant_read_write_data(compile_image_lambda)        
@@ -174,7 +212,7 @@ class MindTetherApiStack(Stack):
         
         get_tether_state_machine = stepfunctions.StateMachine(self,"GetTetherStateMachine",
                                                               definition=get_tether_state_machine_definition,
-                                                              timeout=Duration.minutes(5),
+                                                              timeout=Duration.days(1),
                                                               state_machine_type=stepfunctions.StateMachineType.STANDARD)
         
 
@@ -212,30 +250,43 @@ class MindTetherApiStack(Stack):
         get_tether_status_api_resource = get_tether_entry_api_resource.add_resource("{requestId}")
         
         get_tether_status_api_resource.add_method("GET",get_tether_status_api_integration)
+    
+        
+        ## Now we are creating the infrastructure to support our URL shortener
+        
+       
+          ##redirector API function:
+        redirect_lambda = _lambda.Function(
+            self,
+            "RedirectFunction",
+            code=_lambda.Code.from_asset("lambda/short_url_redirect"),
+            handler="app.lambda_hanlder",
+            runtime=_lambda.Runtime.PYTHON_3_8
+        )
+        
+        redirect_lambda.add_environment("REDIRECT_ASSET_BUCKET", short_url_bucket.bucket_name)
+        short_url_bucket.grant_read(redirect_lambda)
+        
+        redirect_api_integration = apigw.LambdaIntegration(redirect_lambda)
+        redirect_root_resource = api.root.add_resource("redirect")
+        redirect_key_resource = redirect_root_resource.add_resource("{key}")
+        redirect_key_resource.add_method("GET",redirect_api_integration)
+        
+        cloudfront_origin = cloudfront_origins.HttpOrigin(domain_name=api_host)
         
         
-
-        if(self.node.try_get_context("extended_mode") and self.node.try_get_context("extended_mode") == True):
-            print("extended_mode == True")
-            ## URLShortener
-            ## URLShortner:S3 Bucket
-            shortener_bucket = s3.Bucket(self,"URLShortnerBucket")
-            shortener_bucket.add_lifecycle_rule(self,enabled=True,expiration=Duration.minutes(5))
+        redirect_cloudfront_distribution = cloudfront.Distribution(
+            self,
+            "RedirectCloudFront",
+            default_behavior=cloudfront.BehaviorOptions(
+                allowed_methods=cloudfront.AllowedMethods.ALLOW_GET_HEAD,
+                origin=cloudfront_origin
+            )
             
-            # ## URLShortener:LambdaShortener
-            # url_shortener_lambda = _lambda.Function(self,
-            #                                         "ShortenURL",
-            #                                         runtime=_lambda.Runtime.PYTHON_3_8,
-            #                                         code=_lambda.Code.from_asset(path="lambda/shorten_url", bundling=BundlingOptions(
-            #                                             command=["bash", "-c", "pip install -r requirements.txt -t /asset-output && cp -au . /asset-output"],
-            #                                             image=_lambda.Runtime.PYTHON_3_8.bundling_image)),
-            #                                         handler="lambda_handler",
-            #                                         timeout=Duration.seconds(30)
-                                                                
-            # )    
-
-            # shortener_bucket.grant_read_write(url_shortener_lambda)
+        )
         
+
+                
         # Version based on context
         if self.node.try_get_context("deployment") == "prod":
             generate_helper_image_lambda_version = _lambda.Version(self,'GenerateHelperImageV1', function=generate_helper_image_lambda)
