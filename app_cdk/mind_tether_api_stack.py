@@ -188,6 +188,7 @@ class MindTetherApiStack(Stack):
         compile_image_lambda.add_environment("SHORT_URL_BUCKET", short_url_bucket.bucket_name)
         compile_image_lambda.add_layers(mindtether_core,mindtether_assets)
         asset_bucket.grant_read_write(compile_image_lambda)
+        short_url_bucket.grant_read_write(compile_image_lambda)
         get_tether_requests_table.grant_read_write_data(compile_image_lambda)        
 
         
@@ -212,7 +213,6 @@ class MindTetherApiStack(Stack):
         
         get_tether_state_machine = stepfunctions.StateMachine(self,"GetTetherStateMachine",
                                                               definition=get_tether_state_machine_definition,
-                                                              state_machine_name="MindTether-GetTether-%s"%(stage_name),
                                                               timeout=Duration.days(1),
                                                               state_machine_type=stepfunctions.StateMachineType.STANDARD)
         
@@ -273,7 +273,8 @@ class MindTetherApiStack(Stack):
         redirect_key_resource = redirect_root_resource.add_resource("{key}")
         redirect_key_resource.add_method("GET",redirect_api_integration)
         
-        cloudfront_origin = cloudfront_origins.HttpOrigin(domain_name=api_host)
+        cloudfront_origin = cloudfront_origins.HttpOrigin(domain_name=api_host,
+                                                          path="/%s/redirect"%(api_stage))
         
         
         redirect_cloudfront_distribution = cloudfront.Distribution(
@@ -282,10 +283,12 @@ class MindTetherApiStack(Stack):
             comment="RedirectCloudFront for MindTether %s" % (stage_name),
             default_behavior=cloudfront.BehaviorOptions(
                 allowed_methods=cloudfront.AllowedMethods.ALLOW_GET_HEAD,
-                origin=cloudfront_origin
+                origin=cloudfront_origin,
             ),
             
         )
+        
+        
         
 
                 
