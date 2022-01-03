@@ -212,6 +212,7 @@ class MindTetherApiStack(Stack):
         
         get_tether_state_machine = stepfunctions.StateMachine(self,"GetTetherStateMachine",
                                                               definition=get_tether_state_machine_definition,
+                                                              state_machine_name="MindTether-GetTether-%s"%(stage_name),
                                                               timeout=Duration.days(1),
                                                               state_machine_type=stepfunctions.StateMachineType.STANDARD)
         

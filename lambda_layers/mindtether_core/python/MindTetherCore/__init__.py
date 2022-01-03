@@ -58,7 +58,7 @@ class URLShortener:
     def __init__(self) -> None:
         pass
     
-    def shorten_url(long_url:str, short_url_bucket:str, short_url_host:str):
+    def shorten_url(long_url:str, short_url_bucket:str = None, short_url_host:str = None):
         """URLShortener.shorten_url
         
         This takes the long URL and generates a URL shortener link.
