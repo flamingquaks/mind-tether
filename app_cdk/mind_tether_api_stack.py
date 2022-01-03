@@ -274,7 +274,7 @@ class MindTetherApiStack(Stack):
         redirect_key_resource.add_method("GET",redirect_api_integration)
         
         cloudfront_origin = cloudfront_origins.HttpOrigin(domain_name=api_host,
-                                                          path="/%s/redirect"%(api_stage))
+                                                          origin_path="/%s/redirect"%(api_stage))
         
         
         redirect_cloudfront_distribution = cloudfront.Distribution(
