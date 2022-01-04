@@ -51,7 +51,6 @@ class MindTetherApiStack(Stack):
         ## Get context for the current stage:
         stack_context = self.node.try_get_context(stage_name)
         if stack_context:
-            print(stack_context)
             api_host = stack_context['api_host']
             short_url_host = stack_context['short_url_host']
             if stack_context['acm_arn']:
