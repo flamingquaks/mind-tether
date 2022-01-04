@@ -37,18 +37,17 @@ class MindTetherApiStack(Stack):
     
         
         # This will be phased out with the completion on get-tether and subsequent shortcut update.
-        if not self.node.try_get_context("short_url_host") or not self.node.try_get_context("api_host"):
-            print("Missing values in cdk.json. Please check that short_url_host and api_host are provided.")
+        if not self.node.try_get_context("short_url_host"):
+            print("Missing context value. Please check that short_url_host is provided")
             exit()
         else:
             short_url_host_old = self.node.try_get_context("short_url_host")
-            api_host = self.node.try_get_context("api_host")
+            
         route53_zone = None    
         short_url_host = ""
         ## Get context for the current stage:
         stack_context = self.node.try_get_context(stage_name)
         if stack_context:
-            api_host = stack_context['api_host']
             short_url_host = stack_context['short_url_host']
             if stack_context['route53_zone']:
                 route53_zone = stack_context['route53_zone']
@@ -272,7 +271,9 @@ class MindTetherApiStack(Stack):
         redirect_key_resource = redirect_root_resource.add_resource("{key}")
         redirect_key_resource.add_method("GET",redirect_api_integration)
         
-        cloudfront_origin = cloudfront_origins.HttpOrigin(domain_name=api_host)
+        api_origin = f"{api.rest_api_id}.execute-api.{self.region}.{self.url_suffix}"
+        
+        redirect_cloudfront_origin = cloudfront_origins.HttpOrigin(domain_name=api_origin,origin_path="/prod/redirect")
         
         # If not ACM ARN or short URL host are missing we will stick with the generated CNAME
         if route53_zone and short_url_host:
@@ -284,7 +285,7 @@ class MindTetherApiStack(Stack):
             "RedirectCloudFront",
             default_behavior=cloudfront.BehaviorOptions(
                 allowed_methods=cloudfront.AllowedMethods.ALLOW_GET_HEAD,
-                origin=cloudfront_origin
+                origin=redirect_cloudfront_origin
             ), certificate=acm_cert,
             domain_names=[short_url_host]
         )
@@ -294,24 +295,20 @@ class MindTetherApiStack(Stack):
             "RedirectCloudFront",
             default_behavior=cloudfront.BehaviorOptions(
                 allowed_methods=cloudfront.AllowedMethods.ALLOW_GET_HEAD,
-                origin=cloudfront_origin
+                origin=redirect_cloudfront_origin
             )
             )
         
         
         
+    
+        apigw.Deployment(self,"deployment",api=api)
+        # If these values are provided in the context, we assume that the domain name already exists and will import.
+        if stack_context['api'] and route53_zone:
+            api_details = stack_context['api']
+            api_domain = apigw.DomainName.from_domain_name_attributes(self,"apiDomainName", \
+                api_details['host'],api_details['hosted_zone_id'], api_details['gateway_domain'])
+            api_domain.add_base_path_mapping(api,base_path=api_details['stage'])
         
-
-                
-        # Version based on context
-        if self.node.try_get_context("deployment") == "prod":
-            generate_helper_image_lambda_version = _lambda.Version(self,'GenerateHelperImageV1', function=generate_helper_image_lambda)
-            generate_helper_image_lambda_alias = _lambda.Alias(self,"alias", alias_name="prod", version=generate_helper_image_lambda_version)
-        else:
-            generate_helper_image_lambda_alias = _lambda.Alias(self,"GenerateHelperImageAlias", alias_name="dev",version=generate_helper_image_lambda.latest_version)
-            
-
-        api_deployment = apigw.Deployment(self,"deployment",api=api)
-        if stage_name != "prod":
-            api_stage = apigw.Stage(self,stage_name,deployment=api_deployment, stage_name=stage_name)
+        
         
