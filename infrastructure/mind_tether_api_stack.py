@@ -15,6 +15,7 @@ from aws_cdk import (
     aws_certificatemanager as acm,
     aws_ssm as ssm
 )
+import os
 
 
 from constructs import Construct
@@ -22,16 +23,20 @@ from constructs import Construct
 
 class MindTetherApiStack(Stack):
 
-    def __init__(self, scope: Construct, construct_id: str, stage_name:str=None,  **kwargs) -> None:
+    def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
         
-        if not stage_name:
-            exit()
-            
         
+        # This is here so that if the stack is called by a parent deployment process, it is able to properly resolve
+        # the path to src files
+        project_build_base = os.path.realpath(__file__)[:os.path.realpath(__file__).rindex("/")] # folder = this files cwd
+        project_build_base = project_build_base[0:project_build_base.rindex("/")] # folder = one directory above cwd
+                
+        stage_name = self.node.try_get_context("config")
         
         ## Define the Rest Api Gateway
         api = apigw.RestApi(self,"MindTetherApi-%s"%(stage_name))
+    
         
         # This will be phased out with the completion on get-tether and subsequent shortcut update.
         if not self.node.try_get_context("short_url_host") or not self.node.try_get_context("api_host"):
@@ -41,21 +46,20 @@ class MindTetherApiStack(Stack):
             short_url_host_old = self.node.try_get_context("short_url_host")
             api_host = self.node.try_get_context("api_host")
             
-            
+        acm_arn = ""
+        short_url_host = ""
         ## Get context for the current stage:
-        if stack_context := self.node.try_get_context(stage_name):
+        stack_context = self.node.try_get_context(stage_name)
+        if stack_context:
+            print(stack_context)
             api_host = stack_context['api_host']
-            api_stage = stack_context['stage']
             short_url_host = stack_context['short_url_host']
-            cert_arn_string = stack_context['cert_arn']
-            
-            
-        # if cert_arn_string:
-        #     cert_arn = ssm.StringParameter.from_string_parameter_name(self,"certParam", string_parameter_name=cert_arn_string)
-        #     cert = acm.Certificate.from_certificate_arn(self, "short_link_cert",cert_arn.string_value)
-        #     CfnOutput(self,"cert_output",export_name="certoutput",value=cert.certificate_arn)
-        # else:
-        #     exit()
+            if stack_context['acm_arn']:
+                acm_arn = stack_context['acm_arn']
+        else:
+            print("Missing context. Please confirm context is supplied")
+            exit()
+
 
         ## Create the S3 Asset Bucket
         if stage_name == "dev":
@@ -78,16 +82,17 @@ class MindTetherApiStack(Stack):
                                               id="expireOldRedirects"
                                           )])
         
+        
         ###### Create Lambda Layers ######
         mindtether_assets_name="mindtether_assets"
         mindtether_assets = _lambda.LayerVersion(
-            self, mindtether_assets_name, code=_lambda.Code.from_asset("lambda_layers/mindtether_assets_layer"),
+            self, mindtether_assets_name, code=_lambda.Code.from_asset("%s/lambda_layers/mindtether_assets_layer"%(project_build_base)),
             layer_version_name="mindtether_assets"
         )
         mindtether_assets_path="/opt/%s" % (mindtether_assets_name)
         
         mindtether_core = _lambda.LayerVersion(
-            self, "mindtether_core", code=_lambda.Code.from_asset("lambda_layers/mindtether_core"),
+            self, "mindtether_core", code=_lambda.Code.from_asset("%s/lambda_layers/mindtether_core"%(project_build_base)),
             layer_version_name="mindtether_core"
         )
         
@@ -100,7 +105,7 @@ class MindTetherApiStack(Stack):
         generate_helper_image_lambda = _lambda.Function(
             self,
             "GenerateHelperImage",
-            code=_lambda.Code.from_asset("lambda/v0/generate_helper_image"),
+            code=_lambda.Code.from_asset("%s/lambda/v0/generate_helper_image"%(project_build_base)),
             handler="app.lambda_handler",
             runtime=_lambda.Runtime.PYTHON_3_8,
             timeout=Duration.seconds(60)
@@ -145,7 +150,7 @@ class MindTetherApiStack(Stack):
         get_background_image_info_lambda = _lambda.Function(
             self,
             "GetBkgImgInfo",
-            code=_lambda.Code.from_asset("lambda/get_tether/get_background_image_info"),
+            code=_lambda.Code.from_asset("%s/lambda/get_tether/get_background_image_info"%(project_build_base)),
             handler="app.lambda_handler",
             runtime=_lambda.Runtime.PYTHON_3_8,
             timeout=Duration.seconds(60)
@@ -161,7 +166,7 @@ class MindTetherApiStack(Stack):
         get_day_image_lambda = _lambda.Function(
             self,
             "GetDayImgInfo",
-            code=_lambda.Code.from_asset("lambda/get_tether/get_day_image_info"),
+            code=_lambda.Code.from_asset("%s/lambda/get_tether/get_day_image_info"%(project_build_base)),
             handler="app.lambda_handler",
             runtime=_lambda.Runtime.PYTHON_3_8,
             timeout=Duration.seconds(60)
@@ -175,7 +180,7 @@ class MindTetherApiStack(Stack):
         compile_image_lambda = _lambda.Function(
             self,
             "CompileImg",
-            code=_lambda.Code.from_asset("lambda/get_tether/compile_image"),
+            code=_lambda.Code.from_asset("%s/lambda/get_tether/compile_image"%(project_build_base)),
             runtime=_lambda.Runtime.PYTHON_3_8,
             handler="app.lambda_handler",
             timeout=Duration.seconds(60)
@@ -188,7 +193,6 @@ class MindTetherApiStack(Stack):
         compile_image_lambda.add_environment("SHORT_URL_BUCKET", short_url_bucket.bucket_name)
         compile_image_lambda.add_layers(mindtether_core,mindtether_assets)
         asset_bucket.grant_read_write(compile_image_lambda)
-        short_url_bucket.grant_read_write(compile_image_lambda)
         get_tether_requests_table.grant_read_write_data(compile_image_lambda)        
 
         
@@ -219,11 +223,10 @@ class MindTetherApiStack(Stack):
 
         get_tether_entry_lambda = _lambda.Function(self,
                                                    "get-tether-entry",
-                                                   code=_lambda.Code.from_asset("lambda/get_tether/get_tether_entry"),
+                                                   code=_lambda.Code.from_asset("%s/lambda/get_tether/get_tether_entry"%(project_build_base)),
                                                    handler="app.lambda_handler",
                                                    runtime=_lambda.Runtime.PYTHON_3_8)
         
-        # get_tether_entry_lambda.role.add_managed_policy(ManagedPolicy.from_aws_managed_policy_name("AWSLambdaBasicExecutionRole"))
         
         get_tether_requests_table.grant_read_write_data(get_tether_entry_lambda)
         get_tether_state_machine.grant_start_execution(get_tether_entry_lambda) 
@@ -239,7 +242,7 @@ class MindTetherApiStack(Stack):
         
         get_tether_status_lambda = _lambda.Function(self,
                                                     "get-tether-status",
-                                                    code=_lambda.Code.from_asset("lambda/get_tether/get_tether_status"),
+                                                    code=_lambda.Code.from_asset("%s/lambda/get_tether/get_tether_status"%(project_build_base)),
                                                     handler="app.lambda_handler",
                                                     runtime=_lambda.Runtime.PYTHON_3_8)
         
@@ -260,7 +263,7 @@ class MindTetherApiStack(Stack):
         redirect_lambda = _lambda.Function(
             self,
             "RedirectFunction",
-            code=_lambda.Code.from_asset("lambda/short_url_redirect"),
+            code=_lambda.Code.from_asset("%s/lambda/short_url_redirect"%(project_build_base)),
             handler="app.lambda_hanlder",
             runtime=_lambda.Runtime.PYTHON_3_8
         )
@@ -273,20 +276,29 @@ class MindTetherApiStack(Stack):
         redirect_key_resource = redirect_root_resource.add_resource("{key}")
         redirect_key_resource.add_method("GET",redirect_api_integration)
         
-        cloudfront_origin = cloudfront_origins.HttpOrigin(domain_name=api_host,
-                                                          origin_path="/%s/redirect"%(api_stage))
+        cloudfront_origin = cloudfront_origins.HttpOrigin(domain_name=api_host)
         
-        
-        redirect_cloudfront_distribution = cloudfront.Distribution(
+        # If not ACM ARN or short URL host are missing we will stick with the generated CNAME
+        if acm_arn and short_url_host:
+            redirect_cloudfront_distribution = cloudfront.Distribution(
             self,
             "RedirectCloudFront",
-            comment="RedirectCloudFront for MindTether %s" % (stage_name),
             default_behavior=cloudfront.BehaviorOptions(
                 allowed_methods=cloudfront.AllowedMethods.ALLOW_GET_HEAD,
-                origin=cloudfront_origin,
-            ),
-            
+                origin=cloudfront_origin
+            ), certificate=acm.Certificate.from_certificate_arn(self,"cert",acm_arn),
+            domain_names=[short_url_host]
         )
+        else:
+            redirect_cloudfront_distribution = cloudfront.Distribution(
+            self,
+            "RedirectCloudFront",
+            default_behavior=cloudfront.BehaviorOptions(
+                allowed_methods=cloudfront.AllowedMethods.ALLOW_GET_HEAD,
+                origin=cloudfront_origin
+            )
+            )
+        
         
         
         

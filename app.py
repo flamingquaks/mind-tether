@@ -5,14 +5,10 @@ from aws_cdk import (
     App
 )
 
-from app_cdk.cdk_pipeline_stack import CdkPipelineStack
+from infrastructure.mind_tether_api_stack import MindTetherApiStack
 
 app = App()
-mind_tether_dev_pipeline = CdkPipelineStack(app, "MindTetherDev", branch="development", tags={
-    "app":"mind-tether"
-})
-mind_tether_prod_pipeline = CdkPipelineStack(app, "MindTetherProd", branch="main", tags={
-    "app":"mind-tether"
-})
+
+mind_tether_stack = MindTetherApiStack(app,"MindTetherApi")
 
 app.synth()
