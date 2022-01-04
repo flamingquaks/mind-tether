@@ -1,7 +1,5 @@
 from aws_cdk import (
-    CfnOutput,
     Duration,
-    BundlingOptions,
     RemovalPolicy,
     Stack,
     aws_s3 as s3,
@@ -13,7 +11,7 @@ from aws_cdk import (
     aws_cloudfront as cloudfront,
     aws_cloudfront_origins as cloudfront_origins,
     aws_certificatemanager as acm,
-    aws_ssm as ssm
+    aws_route53 as route53
 )
 import os
 
@@ -45,16 +43,15 @@ class MindTetherApiStack(Stack):
         else:
             short_url_host_old = self.node.try_get_context("short_url_host")
             api_host = self.node.try_get_context("api_host")
-            
-        acm_arn = ""
+        route53_zone = None    
         short_url_host = ""
         ## Get context for the current stage:
         stack_context = self.node.try_get_context(stage_name)
         if stack_context:
             api_host = stack_context['api_host']
             short_url_host = stack_context['short_url_host']
-            if stack_context['acm_arn']:
-                acm_arn = stack_context['acm_arn']
+            if stack_context['route53_zone']:
+                route53_zone = stack_context['route53_zone']
         else:
             print("Missing context. Please confirm context is supplied")
             exit()
@@ -278,14 +275,17 @@ class MindTetherApiStack(Stack):
         cloudfront_origin = cloudfront_origins.HttpOrigin(domain_name=api_host)
         
         # If not ACM ARN or short URL host are missing we will stick with the generated CNAME
-        if acm_arn and short_url_host:
+        if route53_zone and short_url_host:
+            hosted_zone = route53.HostedZone.from_hosted_zone_id(self,"route53zone", route53_zone)
+            acm_cert = acm.Certificate(self, "ShortLinkCert", domain_name=short_url_host,
+                                       validation=acm.CertificateValidation.from_dns(hosted_zone))
             redirect_cloudfront_distribution = cloudfront.Distribution(
             self,
             "RedirectCloudFront",
             default_behavior=cloudfront.BehaviorOptions(
                 allowed_methods=cloudfront.AllowedMethods.ALLOW_GET_HEAD,
                 origin=cloudfront_origin
-            ), certificate=acm.Certificate.from_certificate_arn(self,"cert",acm_arn),
+            ), certificate=acm_cert,
             domain_names=[short_url_host]
         )
         else:
