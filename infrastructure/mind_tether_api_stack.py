@@ -304,11 +304,12 @@ class MindTetherApiStack(Stack):
     
         apigw.Deployment(self,"deployment",api=api)
         # If these values are provided in the context, we assume that the domain name already exists and will import.
-        if stack_context['api'] and route53_zone:
-            api_details = stack_context['api']
-            api_domain = apigw.DomainName.from_domain_name_attributes(self,"apiDomainName", \
-                api_details['host'],api_details['hosted_zone_id'], api_details['gateway_domain'])
-            api_domain.add_base_path_mapping(api,base_path=api_details['stage'])
+        # if stack_context and stack_context['api_config'] and route53_zone:
+        #     api_details = stack_context['api_config']
+        #     api_domain = apigw.DomainName.from_domain_name_attributes(self,"apiDomainName", apigw.DomainNameAttributes(
+        #         domain_name=api_details['host'],domain_name_alias_hosted_zone_id=api_details['hosted_zone_id'], domain_name_alias_target=api_details['gateway_domain'])
+        #         )
+        #     api_domain.add_base_path_mapping(api,base_path=api_details['stage'])
         
         
         
