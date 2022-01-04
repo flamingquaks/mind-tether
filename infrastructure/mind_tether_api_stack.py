@@ -189,6 +189,7 @@ class MindTetherApiStack(Stack):
         compile_image_lambda.add_layers(mindtether_core,mindtether_assets)
         asset_bucket.grant_read_write(compile_image_lambda)
         get_tether_requests_table.grant_read_write_data(compile_image_lambda)        
+        short_url_bucket.grant_write(compile_image_lambda)
 
         
         
