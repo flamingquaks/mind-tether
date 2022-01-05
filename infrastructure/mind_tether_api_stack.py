@@ -195,7 +195,6 @@ class MindTetherApiStack(Stack):
         short_url_bucket.grant_write(compile_image_lambda)
 
         
-        
         get_background_image_info_task = stepfunction_tasks.LambdaInvoke(
             self,"GetBkgImgInfoTask", lambda_function=get_background_image_info_lambda
         )
@@ -210,12 +209,21 @@ class MindTetherApiStack(Stack):
             input_path="$.Payload"
         )
         
-        get_tether_state_machine_definition = get_background_image_info_task\
+        # background_image_existence_chek = stepfunction_tasks.CallAwsService(self,"BackgroundCheck",\
+        #     service="s3", action="headObject",parameters={
+        #         "Bucket": asset_bucket.bucket_name,
+        #         "Key": f"images/{stepfunctions.JsonPath.string_at("
+        #     })
+        
+        tether_generation_flow = get_background_image_info_task \
             .next(get_day_image_task) \
             .next(compile_image_task)
+            
+        validate_input_step = stepfunctions.Choice(self,"ValidateInput") \
+            .when(stepfunctions.Condition.is_numeric("$.width").is_numeric("$.height").is_present("$.day"),tether_generation_flow)
         
         get_tether_state_machine = stepfunctions.StateMachine(self,"GetTetherStateMachine",
-                                                              definition=get_tether_state_machine_definition,
+                                                              definition=validate_input_step,
                                                               timeout=Duration.days(1),
                                                               state_machine_type=stepfunctions.StateMachineType.STANDARD)
         
