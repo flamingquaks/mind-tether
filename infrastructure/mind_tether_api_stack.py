@@ -11,7 +11,8 @@ from aws_cdk import (
     aws_cloudfront as cloudfront,
     aws_cloudfront_origins as cloudfront_origins,
     aws_certificatemanager as acm,
-    aws_route53 as route53
+    aws_route53 as route53,
+    aws_route53_targets as route53_targets
 )
 import os
 
@@ -43,14 +44,16 @@ class MindTetherApiStack(Stack):
         else:
             short_url_host_old = self.node.try_get_context("short_url_host")
             
-        route53_zone = None    
+        route53_zone_id = None    
+        route53_zone_name = None
         short_url_host = ""
         ## Get context for the current stage:
         stack_context = self.node.try_get_context(stage_name)
         if stack_context:
             short_url_host = stack_context['short_url_host']
-            if stack_context['route53_zone']:
-                route53_zone = stack_context['route53_zone']
+            if stack_context['route53_zone'] and stack_context['route53_zone_name']:
+                route53_zone_id = stack_context['route53_zone']
+                route53_zone_name = stack_context['route53_zone_name']
         else:
             print("Missing context. Please confirm context is supplied")
             exit()
@@ -277,8 +280,8 @@ class MindTetherApiStack(Stack):
         redirect_cloudfront_origin = cloudfront_origins.HttpOrigin(domain_name=api_origin,origin_path="/prod/redirect")
         
         # If not ACM ARN or short URL host are missing we will stick with the generated CNAME
-        if route53_zone and short_url_host:
-            hosted_zone = route53.HostedZone.from_hosted_zone_id(self,"route53zone", route53_zone)
+        if route53_zone_id and route53_zone_name and short_url_host:
+            hosted_zone = route53.HostedZone.from_hosted_zone_attributes(self,"route53zone", hosted_zone_id=route53_zone_id, zone_name=route53_zone_name)
             acm_cert = acm.Certificate(self, "ShortLinkCert", domain_name=short_url_host,
                                        validation=acm.CertificateValidation.from_dns(hosted_zone))
             redirect_cloudfront_distribution = cloudfront.Distribution(
@@ -289,7 +292,16 @@ class MindTetherApiStack(Stack):
                 origin=redirect_cloudfront_origin
             ), certificate=acm_cert,
             domain_names=[short_url_host]
-        )
+            )
+            short_url_route53_record = route53.AaaaRecord(self,
+                                                          "shortUrlDnsRecord",
+                                                          zone=hosted_zone,
+                                                          target=route53.RecordTarget.from_alias(
+                                                              route53_targets.CloudFrontTarget(
+                                                                  redirect_cloudfront_distribution)
+                                                              ),
+                                                          record_name=short_url_host
+                                                          )
         else:
             redirect_cloudfront_distribution = cloudfront.Distribution(
             self,
