@@ -22,6 +22,8 @@ from constructs import Construct
 
 
 
+
+
 class MindTetherApiStack(Stack):
 
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
@@ -83,59 +85,12 @@ class MindTetherApiStack(Stack):
                                           )])
         
         
-        ###### Create Lambda Layers ######
-        mindtether_assets_name="mindtether_assets"
-        mindtether_assets = _lambda.LayerVersion(
-            self, mindtether_assets_name, code=_lambda.Code.from_asset("%s/lambda_layers/mindtether_assets_layer"%(project_build_base)),
-            layer_version_name="mindtether_assets"
-        )
-        mindtether_assets_path="/opt/%s" % (mindtether_assets_name)
         
         mindtether_core = _lambda.LayerVersion(
             self, "mindtether_core", code=_lambda.Code.from_asset("%s/lambda_layers/mindtether_core"%(project_build_base)),
             layer_version_name="mindtether_core"
         )
         
-        """ 
-        V0 - GenerateHelperImage Lambda
-        This was the very first iteration of the project.   
-        #DEPRECATED!
-        """
-        
-        generate_helper_image_lambda = _lambda.Function(
-            self,
-            "GenerateHelperImage",
-            code=_lambda.Code.from_asset("%s/lambda/v0/generate_helper_image"%(project_build_base)),
-            handler="app.lambda_handler",
-            runtime=_lambda.Runtime.PYTHON_3_8,
-            timeout=Duration.seconds(60)
-        )
-        
-        
-        ## Lambda:GenerateHelperImage - Add Lambda Layers
-        generate_helper_image_lambda.add_layers(mindtether_assets)
-        generate_helper_image_lambda.add_layers(mindtether_core)
-        # generate_helper_image_lambda.add_layers(mindtether_core)
-        
-        ## Lambda:GenerateHelperImage - Add Environment Variables
-        generate_helper_image_lambda.add_environment("S3_BUCKET", asset_bucket.bucket_name)
-        generate_helper_image_lambda.add_environment("SHORTENER_URL","https://%s/admin_shrink_url"%(short_url_host_old))
-        generate_helper_image_lambda.add_environment("CDN_PREFIX",short_url_host_old)
-        
-        ## Lambda:GenerateHelperImage - Grant access to asset_bucket (s3)
-        asset_bucket.grant_read(generate_helper_image_lambda)
-        asset_bucket.grant_write(generate_helper_image_lambda)
-        
-        # Lambda:GenerateHelperImage - Add Lambda to API
-        generate_helper_image_api_integration = apigw.LambdaIntegration(generate_helper_image_lambda)
-        generate_helper_image_api_resource = api.root.add_resource("generate-helper-image")
-        
-        generate_helper_image_api_resource.add_method("GET",generate_helper_image_api_integration)
-        
-        #### END of V0
-        
-        """V1 Lambdas
-        """
         
         short_url_generator = _lambda.Function(
             self,
@@ -146,6 +101,19 @@ class MindTetherApiStack(Stack):
             timeout=Duration.seconds(5)
         )
                 
+                
+        generate_background_image = _lambda.Function(
+            self,
+            "GenerateBackgroundImage",
+            code=_lambda.Code.from_asset(f"{project_build_base}/lambda/get_tether/generate_background_image"),
+            runtime=_lambda.Runtime.PYTHON_3_8,
+            handler="app.lambda_handler"
+        )
+        
+        asset_bucket.grant_read_write(generate_background_image)
+        generate_background_image.add_environment("ASSET_BUCKET", asset_bucket.bucket_name)
+        generate_background_image.add_environment("MIND_TETHER_CORE_PATH","/opt/mindtether_core")
+        
         get_tether_requests_table = dynamodb.Table(
             self,
             "GetTetherRequests",
@@ -156,69 +124,14 @@ class MindTetherApiStack(Stack):
             time_to_live_attribute="ttl"
         )
         
-        get_background_image_info_lambda = _lambda.Function(
-            self,
-            "GetBkgImgInfo",
-            code=_lambda.Code.from_asset("%s/lambda/get_tether/get_background_image_info"%(project_build_base)),
-            handler="app.lambda_handler",
-            runtime=_lambda.Runtime.PYTHON_3_8,
-            timeout=Duration.seconds(60)
-        )
-        
-        
-        get_background_image_info_lambda.add_environment("MIND_TETHER_API_ASSETS",asset_bucket.bucket_name)
-        get_background_image_info_lambda.add_environment("ASSET_LAYER_NAME", mindtether_assets_name)
-        get_background_image_info_lambda.add_layers(mindtether_core,mindtether_assets)
-        asset_bucket.grant_read_write(get_background_image_info_lambda)
-        
-            
-        get_day_image_lambda = _lambda.Function(
-            self,
-            "GetDayImgInfo",
-            code=_lambda.Code.from_asset("%s/lambda/get_tether/get_day_image_info"%(project_build_base)),
-            handler="app.lambda_handler",
-            runtime=_lambda.Runtime.PYTHON_3_8,
-            timeout=Duration.seconds(60)
-        )
-        
-        get_day_image_lambda.add_environment("MIND_TETHER_API_ASSETS",asset_bucket.bucket_name)
-        get_day_image_lambda.add_environment("ASSET_LAYER_NAME", mindtether_assets_name)
-        get_day_image_lambda.add_layers(mindtether_core,mindtether_assets)
-        asset_bucket.grant_read_write(get_day_image_lambda)
-        
-        compile_image_lambda = _lambda.Function(
-            self,
-            "CompileImg",
-            code=_lambda.Code.from_asset("%s/lambda/get_tether/compile_image"%(project_build_base)),
-            runtime=_lambda.Runtime.PYTHON_3_8,
-            handler="app.lambda_handler",
-            timeout=Duration.seconds(60)
-        )
-        
-        compile_image_lambda.add_environment("MIND_TETHER_API_ASSETS",asset_bucket.bucket_name)
-        compile_image_lambda.add_environment("ASSET_LAYER_NAME", mindtether_assets_name)
-        compile_image_lambda.add_environment("REQUEST_TABLE_NAME", get_tether_requests_table.table_name)
-        compile_image_lambda.add_environment("SHORT_URL_HOST", short_url_host)
-        compile_image_lambda.add_environment("SHORT_URL_BUCKET", short_url_bucket.bucket_name)
-        compile_image_lambda.add_layers(mindtether_core,mindtether_assets)
-        asset_bucket.grant_read_write(compile_image_lambda)
-        get_tether_requests_table.grant_read_write_data(compile_image_lambda)        
-        short_url_bucket.grant_write(compile_image_lambda)
 
-        
-        get_background_image_info_task = stepfunction_tasks.LambdaInvoke(
-            self,"GetBkgImgInfoTask", lambda_function=get_background_image_info_lambda
+        generate_background_image_task = stepfunction_tasks.LambdaInvoke(
+            self,
+            "GenerateBackgroundTask",
+            lambda_function=generate_background_image
         )
         
-        get_day_image_task = stepfunction_tasks.LambdaInvoke(
-            self,"GetDayImgTask", lambda_function=get_day_image_lambda,
-            input_path="$.Payload"
-        )
         
-        compile_image_task = stepfunction_tasks.LambdaInvoke(
-            self,"CompileImgTask", lambda_function=compile_image_lambda,
-            input_path="$.Payload"
-        )
         
         generate_short_url_task = stepfunction_tasks.LambdaInvoke(
             self,
@@ -226,18 +139,16 @@ class MindTetherApiStack(Stack):
             lambda_function=short_url_generator
         )
         
-        tether_generation_flow = get_background_image_info_task \
-            .next(get_day_image_task) \
-            .next(compile_image_task) \
+        tether_generation_flow = generate_background_image_task \
             .next(generate_short_url_task)
         
         background_image_existence_validation = stepfunctions.Choice(
             self,
-            "Validate if background exists",
+            "Validate image existance",
             ).when(stepfunctions.Condition.number_greater_than("$.ContentLength",0),generate_short_url_task) \
             .otherwise(tether_generation_flow)
         
-        background_image_existence_query = stepfunction_tasks.CallAwsService(self,"Check if background exists",\
+        background_image_existence_query = stepfunction_tasks.CallAwsService(self,"Query for image",\
             service="s3", action="headObject",parameters={
                 "Bucket": asset_bucket.bucket_name,
                 "Key": stepfunctions.JsonPath.string_at("$.background_base_key")
@@ -318,6 +229,8 @@ class MindTetherApiStack(Stack):
         
         redirect_cloudfront_origin = cloudfront_origins.HttpOrigin(domain_name=api_origin,origin_path="/prod/redirect")
         
+        mindtether_image_assets_origin = cloudfront_origins.S3Origin(asset_bucket,origin_path="/images")
+        
         # If not ACM ARN or short URL host are missing we will stick with the generated CNAME
         if route53_zone_id and route53_zone_name and short_url_host:
             hosted_zone = route53.HostedZone.from_hosted_zone_attributes(self,"route53zone", hosted_zone_id=route53_zone_id, zone_name=route53_zone_name)
@@ -332,6 +245,7 @@ class MindTetherApiStack(Stack):
             ), certificate=acm_cert,
             domain_names=[short_url_host]
             )
+            redirect_cloudfront_distribution.add_behavior("/images/",mindtether_image_assets_origin)
             short_url_route53_record = route53.ARecord(self,
                                                           "shortUrlDnsRecord",
                                                           zone=hosted_zone,

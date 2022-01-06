@@ -10,8 +10,9 @@ import random
     #     pass
 
 
-_font_dir = path.join("/opt/%s" % (environ['ASSET_LAYER_NAME']),"fonts")
+
 class Font():
+    
     def __init__(self) -> None:
         pass
     
@@ -20,7 +21,7 @@ class Font():
             pass
         
     class THE_BOLD_FONT(FontDefinition):
-        FILE = "%s/theboldfont.ttf" % (_font_dir)
+        FILE = "theboldfont.ttf"
         NAME = "TheBoldFont"
     
     DEFAULT_FONT = THE_BOLD_FONT
@@ -29,7 +30,19 @@ class AssetMapper():
         pass
     
     def get_background_image_key(day: str, width:int, height:int, font:Font.FontDefinition = Font.DEFAULT_FONT):
+        """Returns the S3 key for the background image with day text
+
+        Args:
+            day (str): The day
+            width (int): screen width in pixels
+            height (int): screen height in pixels
+            font (Font, optional): Defaults to Font.DEFAULT_FONT
+
+        Returns:
+            str: The S3 Key for the background image with day text
+        """
         return f"images/{width}x{height}/{day}@{font.NAME}@{width}x{height}.jpg"
+    
     
 class Day():
     __days = {
