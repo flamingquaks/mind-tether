@@ -209,7 +209,7 @@ class MindTetherApiStack(Stack):
             input_path="$.Payload"
         )
         
-        background_image_existence_chek = stepfunction_tasks.CallAwsService(self,"BackgroundCheck",\
+        background_image_existence_check = stepfunction_tasks.CallAwsService(self,"BackgroundCheck",\
             service="s3", action="headObject",parameters={
                 "Bucket": asset_bucket.bucket_name,
                 "Key": stepfunctions.JsonPath.string_at("$.background_base_key")
@@ -220,7 +220,8 @@ class MindTetherApiStack(Stack):
             .next(compile_image_task)
             
         validate_input_step = stepfunctions.Choice(self,"ValidateInput") \
-            .when(stepfunctions.Condition.is_numeric("$.width").is_numeric("$.height").is_present("$.day"),tether_generation_flow)
+            .when(stepfunctions.Condition.and_(stepfunctions.Condition.is_numeric("$.height"), stepfunctions.Condition.is_present("$.day"), \
+                stepfunctions.Condition.is_present("$.day")),tether_generation_flow)
         
         get_tether_state_machine = stepfunctions.StateMachine(self,"GetTetherStateMachine",
                                                               definition=validate_input_step,
