@@ -263,9 +263,11 @@ class MindTetherApiStack(Stack):
                                                    handler="app.lambda_handler",
                                                    runtime=_lambda.Runtime.PYTHON_3_8)
         
+        get_tether_entry_lambda.add_permission(mindtether_core)
         
         get_tether_requests_table.grant_read_write_data(get_tether_entry_lambda)
-        get_tether_state_machine.grant_start_execution(get_tether_entry_lambda) 
+        get_tether_state_machine.grant_start_execution(get_tether_entry_lambda)
+        
         
         get_tether_entry_lambda.add_environment("REQUEST_TABLE_NAME", get_tether_requests_table.table_name)
         get_tether_entry_lambda.add_environment("STATE_MACHINCE_ARN", get_tether_state_machine.state_machine_arn)
