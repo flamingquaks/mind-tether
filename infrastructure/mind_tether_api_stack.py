@@ -20,6 +20,8 @@ import os
 from constructs import Construct
 
 
+
+
 class MindTetherApiStack(Stack):
 
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
@@ -134,6 +136,15 @@ class MindTetherApiStack(Stack):
         
         """V1 Lambdas
         """
+        
+        short_url_generator = _lambda.Function(
+            self,
+            "ShortUrlGenerator",
+            code=_lambda.Code.from_asset("%s/lambda/short_url_generator"%(project_build_base)),
+            handler="app.lambda_handler",
+            runtime=_lambda.Runtime.PYTHON_3_8,
+            timeout=Duration.seconds(5)
+        )
                 
         get_tether_requests_table = dynamodb.Table(
             self,
@@ -209,19 +220,36 @@ class MindTetherApiStack(Stack):
             input_path="$.Payload"
         )
         
-        background_image_existence_check = stepfunction_tasks.CallAwsService(self,"BackgroundCheck",\
-            service="s3", action="headObject",parameters={
-                "Bucket": asset_bucket.bucket_name,
-                "Key": stepfunctions.JsonPath.string_at("$.background_base_key")
-            }, iam_resources=[asset_bucket.arn_for_objects("*")])
+        generate_short_url_task = stepfunction_tasks.LambdaInvoke(
+            self,
+            "GenerateShortUrlTask",
+            lambda_function=short_url_generator
+        )
         
         tether_generation_flow = get_background_image_info_task \
             .next(get_day_image_task) \
-            .next(compile_image_task)
+            .next(compile_image_task) \
+            .next(generate_short_url_task)
+        
+        background_image_existence_validation = stepfunctions.Choice(
+            self,
+            "Validate if background exists",
+            ).when(stepfunctions.Condition.number_greater_than("$.ContentLength",0),generate_short_url_task) \
+            .otherwise(tether_generation_flow)
+        
+        background_image_existence_query = stepfunction_tasks.CallAwsService(self,"Check if background exists",\
+            service="s3", action="headObject",parameters={
+                "Bucket": asset_bucket.bucket_name,
+                "Key": stepfunctions.JsonPath.string_at("$.background_base_key")
+            }, iam_resources=[asset_bucket.arn_for_objects("*")]).next(background_image_existence_validation)
+         
             
-        validate_input_step = stepfunctions.Choice(self,"ValidateInput") \
+    
+        
+            
+        validate_input_step = stepfunctions.Choice(self,"Validate Input") \
             .when(stepfunctions.Condition.and_(stepfunctions.Condition.is_numeric("$.height"), stepfunctions.Condition.is_present("$.day"), \
-                stepfunctions.Condition.is_present("$.day")),tether_generation_flow)
+                stepfunctions.Condition.is_present("$.day")),background_image_existence_query)
         
         get_tether_state_machine = stepfunctions.StateMachine(self,"GetTetherStateMachine",
                                                               definition=validate_input_step,
