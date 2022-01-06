@@ -209,11 +209,11 @@ class MindTetherApiStack(Stack):
             input_path="$.Payload"
         )
         
-        # background_image_existence_chek = stepfunction_tasks.CallAwsService(self,"BackgroundCheck",\
-        #     service="s3", action="headObject",parameters={
-        #         "Bucket": asset_bucket.bucket_name,
-        #         "Key": f"images/{stepfunctions.JsonPath.string_at("
-        #     })
+        background_image_existence_chek = stepfunction_tasks.CallAwsService(self,"BackgroundCheck",\
+            service="s3", action="headObject",parameters={
+                "Bucket": asset_bucket.bucket_name,
+                "Key": stepfunctions.JsonPath.string_at("$.background_base_key")
+            }, iam_resources=[asset_bucket.arn_for_objects("*")])
         
         tether_generation_flow = get_background_image_info_task \
             .next(get_day_image_task) \

@@ -14,12 +14,22 @@ _font_dir = path.join("/opt/%s" % (environ['ASSET_LAYER_NAME']),"fonts")
 class Font():
     def __init__(self) -> None:
         pass
-    class THE_BOLD_FONT:
+    
+    class FontDefinition:
+        def __init__(self) -> None:
+            pass
+        
+    class THE_BOLD_FONT(FontDefinition):
         FILE = "%s/theboldfont.ttf" % (_font_dir)
         NAME = "TheBoldFont"
     
     DEFAULT_FONT = THE_BOLD_FONT
+class AssetMapper():
+    def __init__(self) -> None:
+        pass
     
+    def get_background_image_key(day: str, width:int, height:int, font:Font.FontDefinition = Font.DEFAULT_FONT):
+        return f"images/{width}x{height}/{day}@{font.NAME}@{width}x{height}.jpg"
     
 class Day():
     __days = {

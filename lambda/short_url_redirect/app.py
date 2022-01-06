@@ -4,7 +4,7 @@ from botocore.client import Config
 
 REDIRECT_ASSET_BUCKET=os.environ['REDIRECT_ASSET_BUCKET']
 
-def handler(event, context):
+def lambda_handler(event, context):
     print(event)
     short_url = "u/" + event.get("Key")
 
