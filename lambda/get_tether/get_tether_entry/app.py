@@ -22,6 +22,7 @@ def lambda_handler(event,context):
                 "day":day,
                 "width": width,
                 "height": height,
+                "background_base_key": MindTetherCore.AssetMapper.get_background_image_key(day,width,height),
                 "requestId":request_id
             }
             event['requestId'] = request_id
@@ -49,8 +50,7 @@ def lambda_handler(event,context):
                         "requestId":request_id,
                         "height":height,
                         "width":width,
-                        "day":day,
-                        "background_base_key": MindTetherCore.AssetMapper.get_background_image_key(day,width,height)
+                        "day":day
                     })
                 }
     else:
