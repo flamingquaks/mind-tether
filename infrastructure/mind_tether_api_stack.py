@@ -301,7 +301,7 @@ class MindTetherApiStack(Stack):
             ), certificate=acm_cert,
             domain_names=[short_url_host]
             )
-            short_url_route53_record = route53.AaaaRecord(self,
+            short_url_route53_record = route53.ARecord(self,
                                                           "shortUrlDnsRecord",
                                                           zone=hosted_zone,
                                                           target=route53.RecordTarget.from_alias(
