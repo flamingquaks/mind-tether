@@ -230,7 +230,8 @@ class MindTetherApiStack(Stack):
         
         redirect_lambda.add_layers(mindtether_core)
         
-        redirect_lambda.add_environment("REDIRECT_ASSET_BUCKET", short_url_bucket.bucket_name)
+        redirect_lambda.add_environment("SHORT_URL_BUCKET", short_url_bucket.bucket_name)
+        redirect_lambda.add_environment("SHORT_URL_HOST",short_url_host)
         short_url_bucket.grant_read(redirect_lambda)
         
         redirect_api_integration = apigw.LambdaIntegration(redirect_lambda)
