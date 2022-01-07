@@ -228,6 +228,8 @@ class MindTetherApiStack(Stack):
             runtime=_lambda.Runtime.PYTHON_3_8
         )
         
+        redirect_lambda.add_layers(mindtether_core)
+        
         redirect_lambda.add_environment("REDIRECT_ASSET_BUCKET", short_url_bucket.bucket_name)
         short_url_bucket.grant_read(redirect_lambda)
         
