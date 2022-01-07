@@ -111,6 +111,7 @@ class MindTetherApiStack(Stack):
         )
         
         asset_bucket.grant_read_write(generate_background_image)
+        generate_background_image.add_layers(mindtether_core)
         generate_background_image.add_environment("ASSET_BUCKET", asset_bucket.bucket_name)
         generate_background_image.add_environment("MIND_TETHER_CORE_PATH","/opt/mindtether_core")
         
@@ -142,25 +143,22 @@ class MindTetherApiStack(Stack):
         tether_generation_flow = generate_background_image_task \
             .next(generate_short_url_task)
         
-        background_image_existence_validation = stepfunctions.Choice(
-            self,
-            "Validate image existance",
-            ).when(stepfunctions.Condition.number_greater_than("$.ContentLength",0),generate_short_url_task) \
-            .otherwise(tether_generation_flow)
-        
+       
         background_image_existence_query = stepfunction_tasks.CallAwsService(self,"Query for image",\
             service="s3", action="headObject",parameters={
                 "Bucket": asset_bucket.bucket_name,
                 "Key": stepfunctions.JsonPath.string_at("$.background_base_key")
-            }, iam_resources=[asset_bucket.arn_for_objects("*")]).next(background_image_existence_validation)
+            }, iam_resources=[asset_bucket.arn_for_objects("*")]).next(generate_short_url_task)
+        background_image_existence_query.add_catch(tether_generation_flow)
+        
          
             
     
         
             
         validate_input_step = stepfunctions.Choice(self,"Validate Input") \
-            .when(stepfunctions.Condition.and_(stepfunctions.Condition.is_numeric("$.height"), stepfunctions.Condition.is_present("$.day"), \
-                stepfunctions.Condition.is_present("$.day")),background_image_existence_query)
+            .when(stepfunctions.Condition.and_(stepfunctions.Condition.is_present("$.height"), stepfunctions.Condition.is_present("$.width"), \
+                stepfunctions.Condition.is_present("$.day"), stepfunctions.Condition.is_present("$.background_base_key")),background_image_existence_query)
         
         get_tether_state_machine = stepfunctions.StateMachine(self,"GetTetherStateMachine",
                                                               definition=validate_input_step,
