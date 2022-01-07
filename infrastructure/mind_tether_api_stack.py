@@ -168,7 +168,7 @@ class MindTetherApiStack(Stack):
             }, table=get_tether_requests_table,
             expression_attribute_values={
                 ":status" : stepfunction_tasks.DynamoAttributeValue.from_string("COMPLETE"),
-                ":url": stepfunction_tasks.DynamoAttributeValue.from_string(stepfunctions.JsonPath.string_at("$.Payload.url"))
+                ":url": stepfunction_tasks.DynamoAttributeValue.from_string(stepfunctions.JsonPath.string_at("$.short_url"))
             },
             update_expression="SET create_status = :status and url = :url")
        
@@ -264,7 +264,7 @@ class MindTetherApiStack(Stack):
                 "method.response.header.Location" : "integration.response.body.Redirect"
             },
             response_templates={
-                "application/json":""
+                "application/json":{ "key": "$input.params('key')" }
             }
         )
         
