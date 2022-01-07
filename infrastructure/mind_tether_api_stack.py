@@ -157,7 +157,7 @@ class MindTetherApiStack(Stack):
             service="s3", action="headObject",parameters={
                 "Bucket": asset_bucket.bucket_name,
                 "Key": stepfunctions.JsonPath.string_at("$.background_base_key")
-            }, iam_resources=[asset_bucket.arn_for_objects("*")])
+            }, iam_resources=[asset_bucket.arn_for_objects("*")], result_path=stepfunctions.JsonPath.string_at("$.objectResult"))
         background_image_existence_query_task.add_catch(generate_background_image_task, result_path=stepfunctions.JsonPath.string_at("$.errorCatch"))
         background_image_existence_query_task.next(generate_short_url_task)
         
@@ -234,12 +234,15 @@ class MindTetherApiStack(Stack):
         redirect_lambda.add_environment("SHORT_URL_HOST",short_url_host)
         short_url_bucket.grant_read(redirect_lambda)
         
-        redirect_api_integration = apigw.LambdaIntegration(redirect_lambda, integration_responses=apigw.IntegrationResponse(
-            status_code=302,
+        redirect_integration_response = apigw.IntegrationResponse(
+            status_code='302',
             response_parameters={
-                "method.response.header.Lambda": "integration.response.body.Redirect"
+                "Loaction": "integration.response.body.Redirect"
             }
-        ))
+        )
+        
+        
+        redirect_api_integration = apigw.LambdaIntegration(redirect_lambda, integration_responses=[redirect_integration_response])
         redirect_root_resource = api.root.add_resource("redirect")
         redirect_key_resource = redirect_root_resource.add_resource("{key}")
         redirect_key_resource.add_method("GET",redirect_api_integration)
