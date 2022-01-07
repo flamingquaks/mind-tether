@@ -149,9 +149,25 @@ class MindTetherApiStack(Stack):
             input_path=stepfunctions.JsonPath.string_at("$.Payload")
         )
         
-        tether_generation_flow = generate_background_image_task \
-            .next(generate_short_url_task)
+        update_tether_status_success_task = stepfunction_tasks.DynamoUpdateItem(self,
+            "Update Tether Status as Completed",
+            key={
+                "requestId": stepfunction_tasks.DynamoAttributeValue.from_string(stepfunctions.JsonPath.string_at("$.requestId"))
+            }, table=get_tether_requests_table,
+            expression_attribute_values={
+                ":status" : stepfunction_tasks.DynamoAttributeValue.from_string("COMPLETE")
+            },
+            update_expression="SET create_status = :status")
         
+        update_tether_status_fail_task = stepfunction_tasks.DynamoUpdateItem(self,
+            "Update Tether Status as Failed",
+            key={
+                "requestId": stepfunction_tasks.DynamoAttributeValue.from_string(stepfunctions.JsonPath.string_at("$.requestId"))
+            }, table=get_tether_requests_table,
+            expression_attribute_values={
+                ":status" : stepfunction_tasks.DynamoAttributeValue.from_string("COMPLETE")
+            },
+            update_expression="SET create_status = :status")
        
         background_image_existence_query_task = stepfunction_tasks.CallAwsService(self,"Query for image",\
             service="s3", action="headObject",parameters={
@@ -159,7 +175,7 @@ class MindTetherApiStack(Stack):
                 "Key": stepfunctions.JsonPath.string_at("$.background_base_key")
             }, iam_resources=[asset_bucket.arn_for_objects("*")], result_path=stepfunctions.JsonPath.string_at("$.objectResult"))
         background_image_existence_query_task.add_catch(generate_background_image_task, result_path=stepfunctions.JsonPath.string_at("$.errorCatch"))
-        background_image_existence_query_task.next(generate_short_url_task)
+        background_image_existence_query_task.next(generate_short_url_task).next(update_tether_status_success_tasks)
         
         
          
@@ -235,18 +251,6 @@ class MindTetherApiStack(Stack):
         redirect_lambda.add_environment("SHORT_URL_HOST",short_url_host)
         short_url_bucket.grant_read(redirect_lambda)
         
-        redirect_integration_response = apigw.IntegrationResponse(
-            status_code='302',
-            response_parameters={
-               "method.response.header.Location": "integration.response.body.Redirect"
-            }
-        )
-        
-        # redirect_response_model = apigw.Model(
-        #     self,
-        #     "RedirectResponseModel",
-        #     rest_api=api
-        # )
         
         redirect_method_response = apigw.MethodResponse(status_code="302",
                                                         response_parameters={
