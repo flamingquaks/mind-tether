@@ -145,7 +145,7 @@ class MindTetherApiStack(Stack):
             self,
             "GenerateShortUrlTask",
             lambda_function=short_url_generator,
-            input_path=stepfunctions.JsonPath("$.Payload")
+            input_path=stepfunctions.JsonPath.string_at("$.Payload")
         )
         
         tether_generation_flow = generate_background_image_task \
