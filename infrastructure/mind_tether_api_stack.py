@@ -16,6 +16,7 @@ from aws_cdk import (
 )
 import os
 
+import json
 
 from constructs import Construct
 
@@ -264,7 +265,7 @@ class MindTetherApiStack(Stack):
                 "method.response.header.Location" : "integration.response.body.Redirect"
             },
             response_templates={
-                "application/json":{ "key": "$input.params('key')" }
+                "application/json": json.dumps({ "key": "$input.params('key')" })
             }
         )
         
