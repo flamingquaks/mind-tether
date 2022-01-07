@@ -134,12 +134,6 @@ class MindTetherApiStack(Stack):
         )
         
 
-        generate_background_image_task = stepfunction_tasks.LambdaInvoke(
-            self,
-            "GenerateBackgroundTask",
-            lambda_function=generate_background_image
-        )
-        
         
         
         generate_short_url_task = stepfunction_tasks.LambdaInvoke(
@@ -147,6 +141,14 @@ class MindTetherApiStack(Stack):
             "Generate short URL",
             lambda_function=short_url_generator
         )
+        
+        generate_background_image_task = stepfunction_tasks.LambdaInvoke(
+            self,
+            "GenerateBackgroundTask",
+            lambda_function=generate_background_image
+        ).next(generate_short_url_task)
+        
+        
         
         update_tether_status_success_task = stepfunction_tasks.DynamoUpdateItem(self,
             "Update Tether Status as Completed",
@@ -165,9 +167,10 @@ class MindTetherApiStack(Stack):
                 "requestId": stepfunction_tasks.DynamoAttributeValue.from_string(stepfunctions.JsonPath.string_at("$.requestId"))
             }, table=get_tether_requests_table,
             expression_attribute_values={
-                ":status" : stepfunction_tasks.DynamoAttributeValue.from_string("COMPLETE")
+                ":status" : stepfunction_tasks.DynamoAttributeValue.from_string("COMPLETE"),
+                ":url": stepfunction_tasks.DynamoAttributeValue.from_string(stepfunctions.JsonPath.string_at("$.Payload.url"))
             },
-            update_expression="SET create_status = :status")
+            update_expression="SET create_status = :status and url = :url")
        
         background_image_existence_query_task = stepfunction_tasks.CallAwsService(self,"Query for image",\
             service="s3", action="headObject",parameters={
