@@ -14,14 +14,13 @@ def lambda_handler(event,context):
                 "requestId":{"S": request_id}
             }
         )
-        print(dynamo_response)
         if dynamo_response and dynamo_response['Item'] and dynamo_response['Item']['create_status']['S']:
             if dynamo_response['Item']['create_status']['S'] == "COMPLETE":
                 return {
                 "statusCode":200,
                 "body":json.dumps({
                     "status":dynamo_response['Item']['create_status']['S'],
-                    "url": dynamo_response['Item']['image_url']['S']
+                    "requestId": request_id
                 })
                
             }
