@@ -112,7 +112,7 @@ class MindTetherApiStack(Stack):
         
         asset_bucket.grant_read_write(generate_background_image)
         generate_background_image.add_layers(mindtether_core)
-        generate_background_image.add_environment("ASSET_BUCKET", asset_bucket.bucket_name)
+        generate_background_image.add_environment("TETHER_ASSETS", asset_bucket.bucket_name)
         generate_background_image.add_environment("MIND_TETHER_CORE_PATH","/opt/mindtether_core")
         
         get_tether_requests_table = dynamodb.Table(
@@ -149,7 +149,7 @@ class MindTetherApiStack(Stack):
                 "Bucket": asset_bucket.bucket_name,
                 "Key": stepfunctions.JsonPath.string_at("$.background_base_key")
             }, iam_resources=[asset_bucket.arn_for_objects("*")])
-        background_image_existence_query_task.add_catch(generate_background_image_task)
+        background_image_existence_query_task.add_catch(generate_background_image_task, result_path=stepfunctions.JsonPath.string_at("$.errorCatch"))
         background_image_existence_query_task.next(generate_short_url_task)
         
         

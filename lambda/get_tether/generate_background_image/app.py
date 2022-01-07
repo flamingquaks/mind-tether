@@ -49,7 +49,7 @@ def lambda_handler(event,context):
         width = int(event['width'])
         height = int(event['height'])
         background_image = generate_background_image(width,height,day)
-        background_image = add_day_to_background(background_image,width,height,15,70)
+        background_image = add_day_to_background(background_image,width,day,height,15,70)
         upload_response = upload_image_to_s3(background_image,width,height,day)
         background_image.close()
         event['asset_key'] = event['url'] = MindTetherCore.AssetMapper.get_background_image_key(day,width,height)
