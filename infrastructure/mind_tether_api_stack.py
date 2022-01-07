@@ -244,10 +244,15 @@ class MindTetherApiStack(Stack):
         
         redirect_api_integration = apigw.LambdaIntegration(redirect_lambda, 
                                                            proxy=False,
-                                                           integration_responses=[redirect_integration_response])
+                                                           integration_responses=[{
+                                                               "statusCode": "302",
+                                                               "responseParameters": {
+                                                                   "method.response.header.Location": "integration.response.body.Redirect" 
+                                                               }
+                                                           }])
         redirect_root_resource = api.root.add_resource("redirect")
         redirect_key_resource = redirect_root_resource.add_resource("{key}")
-        redirect_key_resource.add_method("GET",redirect_api_integration)
+        redirect_key_resource.add_method("GET",redirect_api_integration, method_responses=[redirect_method_response])
         api_origin = f"{api.rest_api_id}.execute-api.{self.region}.{self.url_suffix}"
         
         oai = cloudfront.OriginAccessIdentity(self,"cloudfront-oai")
