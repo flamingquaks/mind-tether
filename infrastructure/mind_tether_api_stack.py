@@ -175,7 +175,7 @@ class MindTetherApiStack(Stack):
                 "Key": stepfunctions.JsonPath.string_at("$.background_base_key")
             }, iam_resources=[asset_bucket.arn_for_objects("*")], result_path=stepfunctions.JsonPath.string_at("$.objectResult"))
         background_image_existence_query_task.add_catch(generate_background_image_task, result_path=stepfunctions.JsonPath.string_at("$.errorCatch"))
-        background_image_existence_query_task.next(generate_short_url_task).next(update_tether_status_success_tasks)
+        background_image_existence_query_task.next(generate_short_url_task).next(update_tether_status_success_task)
         
         
          
