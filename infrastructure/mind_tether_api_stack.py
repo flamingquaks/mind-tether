@@ -99,7 +99,8 @@ class MindTetherApiStack(Stack):
             handler="app.lambda_handler",
             runtime=_lambda.Runtime.PYTHON_3_8,
             timeout=Duration.seconds(5)
-        )
+        ).add_layers(mindtether_core)
+        
                 
                 
         generate_background_image = _lambda.Function(
@@ -107,7 +108,8 @@ class MindTetherApiStack(Stack):
             "GenerateBackgroundImage",
             code=_lambda.Code.from_asset(f"{project_build_base}/lambda/get_tether/generate_background_image"),
             runtime=_lambda.Runtime.PYTHON_3_8,
-            handler="app.lambda_handler"
+            handler="app.lambda_handler",
+            timeout=Duration.seconds(15)
         )
         
         asset_bucket.grant_read_write(generate_background_image)
