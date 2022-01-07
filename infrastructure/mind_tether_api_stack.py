@@ -257,15 +257,14 @@ class MindTetherApiStack(Stack):
                                                             "method.response.header.Location": True
                                                         })
         
-        
         redirect_api_integration = apigw.LambdaIntegration(redirect_lambda, 
                                                            proxy=False,
-                                                           integration_responses=[{
-                                                               "statusCode": "302",
-                                                               "responseParameters": {
-                                                                   "method.response.header.Location": "integration.response.body.Redirect" 
+                                                           integration_responses=[apigw.IntegrationResponse(
+                                                               status_code="302",
+                                                               response_parameters={
+                                                                   "method.response.header.Location": "integration.response.body.Redirect"
                                                                }
-                                                           }])
+                                                           )])
         redirect_root_resource = api.root.add_resource("redirect")
         redirect_key_resource = redirect_root_resource.add_resource("{key}")
         redirect_key_resource.add_method("GET",redirect_api_integration, method_responses=[redirect_method_response])
