@@ -224,7 +224,7 @@ class MindTetherApiStack(Stack):
             self,
             "RedirectFunction",
             code=_lambda.Code.from_asset("%s/lambda/short_url_redirect"%(project_build_base)),
-            handler="app.lambda_hanlder",
+            handler="app.lambda_handler",
             runtime=_lambda.Runtime.PYTHON_3_8
         )
         
