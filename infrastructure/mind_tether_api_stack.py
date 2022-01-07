@@ -150,6 +150,7 @@ class MindTetherApiStack(Stack):
         
         update_tether_status_success_task = stepfunction_tasks.DynamoUpdateItem(self,
             "Update Tether Status as Completed",
+            input_path=stepfunctions.JsonPath.string_at("$.Payload"),
             key={
                 "requestId": stepfunction_tasks.DynamoAttributeValue.from_string(stepfunctions.JsonPath.string_at("$.requestId"))
             }, table=get_tether_requests_table,
@@ -250,23 +251,25 @@ class MindTetherApiStack(Stack):
         redirect_lambda.add_environment("SHORT_URL_HOST",short_url_host)
         short_url_bucket.grant_read(redirect_lambda)
         
+        method_response_302 = apigw.MethodResponse(status_code="302",response_parameters={
+            "method.response.header.Location": True
+        })
         
-        redirect_method_response = apigw.MethodResponse(status_code="302",
-                                                        response_parameters={
-                                                            "method.response.header.Location": True
-                                                        })
+        redirect_api_integration_response = apigw.IntegrationResponse(
+            status_code=method_response_302.status_code,
+            response_parameters={
+                "method.response.header.Location" : "integration.response.body.Redirect"
+            }
+        )
         
         redirect_api_integration = apigw.LambdaIntegration(redirect_lambda, 
-                                                           proxy=False,
-                                                           integration_responses=[apigw.IntegrationResponse(
-                                                               status_code="302",
-                                                               response_parameters={
-                                                                   "method.response.header.Location": "integration.response.body.Redirect"
-                                                               }
-                                                           )])
+                                                           proxy=False,integration_responses=[redirect_api_integration_response])
+        
+        
+        
         redirect_root_resource = api.root.add_resource("redirect")
         redirect_key_resource = redirect_root_resource.add_resource("{key}")
-        redirect_key_resource.add_method("GET",redirect_api_integration, method_responses=[redirect_method_response])
+        redirect_key_resource.add_method("GET",redirect_api_integration, method_responses=[method_response_302])
         api_origin = f"{api.rest_api_id}.execute-api.{self.region}.{self.url_suffix}"
         
         oai = cloudfront.OriginAccessIdentity(self,"cloudfront-oai")
