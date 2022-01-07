@@ -215,6 +215,7 @@ class MindTetherApiStack(Stack):
         
         get_tether_status_api_resource.add_method("GET",get_tether_status_api_integration)
     
+  
         
         ## Now we are creating the infrastructure to support our URL shortener
         
@@ -240,6 +241,17 @@ class MindTetherApiStack(Stack):
                "method.response.header.Location": "integration.response.body.Redirect"
             }
         )
+        
+        # redirect_response_model = apigw.Model(
+        #     self,
+        #     "RedirectResponseModel",
+        #     rest_api=api
+        # )
+        
+        redirect_method_response = apigw.MethodResponse(status_code="302",
+                                                        response_parameters={
+                                                            "method.response.header.Location": True
+                                                        })
         
         
         redirect_api_integration = apigw.LambdaIntegration(redirect_lambda, 
