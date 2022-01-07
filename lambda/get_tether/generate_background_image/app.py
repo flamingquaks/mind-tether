@@ -18,7 +18,7 @@ def add_day_to_background(background_image: Image, width:int, height:int, day: s
     text_image = Image.new("RGBA",(max_text_width,max_text_height))
     font_size = 1
     font_config = MindTetherCore.Font.DEFAULT_FONT
-    font_file = "/opt/fonts/{font_config.FILE}"
+    font_file = f"/opt/fonts/{font_config.FILE}"
     font = ImageFont.truetype(font_file,font_size)
     while font.getsize(day)[0] < text_image.size[0] and font.getsize(day)[1] < text_image.size[1]:
         font_size += 1
@@ -51,7 +51,8 @@ def lambda_handler(event,context):
         background_image = add_day_to_background(background_image,width,height,day,15,70)
         upload_response = upload_image_to_s3(background_image,width,height,day)
         background_image.close()
-        event['asset_key'] = event['url'] = MindTetherCore.AssetMapper.get_background_image_key(day,width,height)
+        event['asset_key'] = MindTetherCore.AssetMapper.get_background_image_key(day,width,height)
+        event['url'] = f"/{event['asset_key']}"
         return event
     else:
         return {

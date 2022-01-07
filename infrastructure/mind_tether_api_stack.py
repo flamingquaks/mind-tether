@@ -103,6 +103,7 @@ class MindTetherApiStack(Stack):
         short_url_generator.add_layers(mindtether_core)
         
         short_url_generator.add_environment("SHORT_URL_BUCKET", short_url_bucket.bucket_name)
+        short_url_generator.add_environment("SHORT_URL_HOLST", short_url_host)
         
         short_url_bucket.grant_read_write(short_url_generator)
         
@@ -174,6 +175,8 @@ class MindTetherApiStack(Stack):
                                                               definition=validate_input_step,
                                                               timeout=Duration.days(1),
                                                               state_machine_type=stepfunctions.StateMachineType.STANDARD)
+        
+        asset_bucket.grant_read(get_tether_state_machine)
         
 
         get_tether_entry_lambda = _lambda.Function(self,
