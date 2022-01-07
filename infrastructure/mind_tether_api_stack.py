@@ -99,7 +99,12 @@ class MindTetherApiStack(Stack):
             handler="app.lambda_handler",
             runtime=_lambda.Runtime.PYTHON_3_8,
             timeout=Duration.seconds(5)
-        ).add_layers(mindtether_core)
+        )
+        short_url_generator.add_layers(mindtether_core)
+        
+        short_url_generator.add_environment("SHORT_URL_BUCKET", short_url_bucket.bucket_name)
+        
+        short_url_bucket.grant_read_write(short_url_generator)
         
                 
                 
@@ -139,7 +144,8 @@ class MindTetherApiStack(Stack):
         generate_short_url_task = stepfunction_tasks.LambdaInvoke(
             self,
             "GenerateShortUrlTask",
-            lambda_function=short_url_generator
+            lambda_function=short_url_generator,
+            input_path=stepfunctions.JsonPath("$.Payload")
         )
         
         tether_generation_flow = generate_background_image_task \
@@ -247,7 +253,6 @@ class MindTetherApiStack(Stack):
             ), certificate=acm_cert,
             domain_names=[short_url_host]
             )
-            redirect_cloudfront_distribution.add_behavior("/images/",mindtether_image_assets_origin)
             short_url_route53_record = route53.ARecord(self,
                                                           "shortUrlDnsRecord",
                                                           zone=hosted_zone,
@@ -266,7 +271,8 @@ class MindTetherApiStack(Stack):
                 origin=redirect_cloudfront_origin
             )
             )
-        
+
+        redirect_cloudfront_distribution.add_behavior("/images/",mindtether_image_assets_origin)        
         
         
     
