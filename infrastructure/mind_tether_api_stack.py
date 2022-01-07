@@ -103,7 +103,7 @@ class MindTetherApiStack(Stack):
         short_url_generator.add_layers(mindtether_core)
         
         short_url_generator.add_environment("SHORT_URL_BUCKET", short_url_bucket.bucket_name)
-        short_url_generator.add_environment("SHORT_URL_HOLST", short_url_host)
+        short_url_generator.add_environment("SHORT_URL_HOST", short_url_host)
         
         short_url_bucket.grant_read_write(short_url_generator)
         
@@ -144,7 +144,7 @@ class MindTetherApiStack(Stack):
         
         generate_short_url_task = stepfunction_tasks.LambdaInvoke(
             self,
-            "GenerateShortUrlTask",
+            "Generate short URL",
             lambda_function=short_url_generator,
             input_path=stepfunctions.JsonPath.string_at("$.Payload")
         )
@@ -234,11 +234,15 @@ class MindTetherApiStack(Stack):
         redirect_lambda.add_environment("SHORT_URL_HOST",short_url_host)
         short_url_bucket.grant_read(redirect_lambda)
         
-        redirect_api_integration = apigw.LambdaIntegration(redirect_lambda)
+        redirect_api_integration = apigw.LambdaIntegration(redirect_lambda, integration_responses=apigw.IntegrationResponse(
+            status_code=302,
+            response_parameters={
+                "method.response.header.Lambda": "integration.response.body.Redirect"
+            }
+        ))
         redirect_root_resource = api.root.add_resource("redirect")
         redirect_key_resource = redirect_root_resource.add_resource("{key}")
         redirect_key_resource.add_method("GET",redirect_api_integration)
-        
         api_origin = f"{api.rest_api_id}.execute-api.{self.region}.{self.url_suffix}"
         
         oai = cloudfront.OriginAccessIdentity(self,"cloudfront-oai")

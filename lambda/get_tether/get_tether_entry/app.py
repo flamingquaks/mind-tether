@@ -23,6 +23,7 @@ def lambda_handler(event,context):
                 "width": width,
                 "height": height,
                 "background_base_key": MindTetherCore.AssetMapper.get_background_image_key(day,width,height),
+                "url": f"/{MindTetherCore.AssetMapper.get_background_image_key(day,width,height)}",
                 "requestId":request_id
             }
             event['requestId'] = request_id
