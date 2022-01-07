@@ -145,8 +145,7 @@ class MindTetherApiStack(Stack):
         generate_short_url_task = stepfunction_tasks.LambdaInvoke(
             self,
             "Generate short URL",
-            lambda_function=short_url_generator,
-            input_path=stepfunctions.JsonPath.string_at("$.Payload")
+            lambda_function=short_url_generator
         )
         
         update_tether_status_success_task = stepfunction_tasks.DynamoUpdateItem(self,
