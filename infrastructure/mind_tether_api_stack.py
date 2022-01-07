@@ -259,11 +259,15 @@ class MindTetherApiStack(Stack):
             status_code=method_response_302.status_code,
             response_parameters={
                 "method.response.header.Location" : "integration.response.body.Redirect"
+            },
+            response_templates={
+                "application/json":""
             }
         )
         
         redirect_api_integration = apigw.LambdaIntegration(redirect_lambda, 
-                                                           proxy=False,integration_responses=[redirect_api_integration_response])
+                                                           proxy=False,
+                                                           integration_responses=[redirect_api_integration_response])
         
         
         
