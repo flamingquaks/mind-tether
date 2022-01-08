@@ -158,7 +158,7 @@ class MindTetherApiStack(Stack):
                 "requestId": stepfunction_tasks.DynamoAttributeValue.from_string(stepfunctions.JsonPath.string_at("$.requestId"))
             }, table=get_tether_requests_table,
             expression_attribute_values={
-                ":short_url" : stepfunction_tasks.DynamoAttributeValue.from_string(stepfunctions.JsonPath.string_at("$.url")),
+                ":short_url" : stepfunction_tasks.DynamoAttributeValue.from_string(stepfunctions.JsonPath.string_at("$.short_url")),
                 ":status" : stepfunction_tasks.DynamoAttributeValue.from_string("COMPLETE")
             },
             update_expression="SET create_status = :status, short_url = :short_url")
