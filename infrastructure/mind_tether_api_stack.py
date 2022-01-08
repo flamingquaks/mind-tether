@@ -286,7 +286,7 @@ class MindTetherApiStack(Stack):
         
         redirect_cloudfront_origin = cloudfront_origins.HttpOrigin(domain_name=api_origin,origin_path="/prod/redirect")
         
-        mindtether_image_assets_origin = cloudfront_origins.S3Origin(asset_bucket,origin_path="/images",origin_access_identity=oai)
+        mindtether_image_assets_origin = cloudfront_origins.S3Origin(asset_bucket,origin_access_identity=oai)
         
         # If not ACM ARN or short URL host are missing we will stick with the generated CNAME
         if route53_zone_id and route53_zone_name and short_url_host:
@@ -317,11 +317,12 @@ class MindTetherApiStack(Stack):
             "RedirectCloudFront",
             default_behavior=cloudfront.BehaviorOptions(
                 allowed_methods=cloudfront.AllowedMethods.ALLOW_GET_HEAD,
-                origin=redirect_cloudfront_origin
+                origin=redirect_cloudfront_origin,
+                viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS
             )
             )
 
-        redirect_cloudfront_distribution.add_behavior("/images/",mindtether_image_assets_origin)        
+        redirect_cloudfront_distribution.add_behavior("images/*",mindtether_image_assets_origin,viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS)        
         
         
     
