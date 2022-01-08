@@ -140,7 +140,8 @@ class MindTetherApiStack(Stack):
         generate_short_url_task = stepfunction_tasks.LambdaInvoke(
             self,
             "Generate short URL",
-            lambda_function=short_url_generator
+            lambda_function=short_url_generator,
+            input_path=stepfunctions.JsonPath.string_at("$.Payload")
         )
         
         generate_background_image_task = stepfunction_tasks.LambdaInvoke(
