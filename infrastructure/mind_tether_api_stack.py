@@ -263,7 +263,7 @@ class MindTetherApiStack(Stack):
         redirect_api_integration_response = apigw.IntegrationResponse(
             status_code=method_response_302.status_code,
             response_parameters={
-                "method.response.header.Location" : "integration.response.body.Redirect"
+                "method.response.header.Location" : "integration.response.body.redirect"
             }
         )
         
