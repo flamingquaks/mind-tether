@@ -161,7 +161,7 @@ class MindTetherApiStack(Stack):
                 ":url" : stepfunction_tasks.DynamoAttributeValue.from_string(stepfunctions.JsonPath.string_at("$.url")),
                 ":status" : stepfunction_tasks.DynamoAttributeValue.from_string("COMPLETE")
             },
-            update_expression="SET create_status = :status and url = :url")
+            update_expression="SET create_status = :status, url = :url")
         
         update_tether_status_fail_task = stepfunction_tasks.DynamoUpdateItem(self,
             "Update Tether Status as Failed",
