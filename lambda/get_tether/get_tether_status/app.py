@@ -21,7 +21,7 @@ def lambda_handler(event,context):
                 "body":json.dumps({
                     "status":dynamo_response['Item']['create_status']['S'],
                     "requestId": request_id,
-                    "url": dynamo_response['Item']['url']['S']
+                    "url": dynamo_response['Item']['short_url']['S']
                 })
                
             }
