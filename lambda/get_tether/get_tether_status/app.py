@@ -20,7 +20,8 @@ def lambda_handler(event,context):
                 "statusCode":200,
                 "body":json.dumps({
                     "status":dynamo_response['Item']['create_status']['S'],
-                    "requestId": request_id
+                    "requestId": request_id,
+                    "url": dynamo_response['Item']['url']['S']
                 })
                
             }
