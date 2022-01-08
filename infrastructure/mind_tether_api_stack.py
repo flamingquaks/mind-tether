@@ -108,7 +108,7 @@ class MindTetherApiStack(Stack):
         version_info.add_layers(mindtether_core)
         version_info.add_environment("STAGE", stage_name)
         version_info.add_to_role_policy(iam.PolicyStatement(
-            actions=["ssm:GetParameter", "ssm:GetParameters"],
+            actions=["ssm:GetParametersByPath"],
             resources=[f"arn:aws:ssm:*:{account_id}:parameter/{stage_name}/mindtether/version/*"],
             effect=iam.Effect.ALLOW
         ))
