@@ -12,7 +12,8 @@ from aws_cdk import (
     aws_cloudfront_origins as cloudfront_origins,
     aws_certificatemanager as acm,
     aws_route53 as route53,
-    aws_route53_targets as route53_targets
+    aws_route53_targets as route53_targets,
+    aws_iam as iam
 )
 import os
 
@@ -85,12 +86,38 @@ class MindTetherApiStack(Stack):
                                               id="expireOldRedirects"
                                           )])
         
+    
         
         
         mindtether_core = _lambda.LayerVersion(
             self, "mindtether_core", code=_lambda.Code.from_asset("%s/lambda_layers/mindtether_core"%(project_build_base)),
             layer_version_name="mindtether_core"
         )
+        
+        account_id = Stack.of(self).account
+        
+        
+        
+        version_info = _lambda.Function(
+            self,
+            "VersionInfo",
+            code=_lambda.Code.from_asset(f"{project_build_base}/lambda/version_info"),
+            handler="app.lambda_handler",
+            runtime=_lambda.Runtime.PYTHON_3_8
+        )
+        version_info.add_layers(mindtether_core)
+        version_info.add_environment("STAGE", stage_name)
+        version_info.add_to_role_policy(iam.PolicyStatement(
+            actions=["ssm:GetParameter", "ssm:GetParameters"],
+            resources=[f"arn:aws:ssm:*:{account_id}:parameter/{stage_name}/MindTether/version/*"],
+            effect=iam.Effect.ALLOW
+        ))
+        
+        version_resource = api.root.add_resource("version")
+        app_version_resource = version_resource.add_resource("{app}")
+        app_version_integration = apigw.LambdaIntegration(version_info)
+        app_version_resource.add_method("GET",app_version_integration)
+        
         
         
         short_url_generator = _lambda.Function(
