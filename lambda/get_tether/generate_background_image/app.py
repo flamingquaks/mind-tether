@@ -12,9 +12,9 @@ def generate_background_image(width: int, height: int, day: str):
 
 def add_day_to_background(background_image: Image, width:int, height:int, day: str, max_screen_height_percent: int, day_vertical_start_percent: int):
     max_text_height = int(height - (height * max_screen_height_percent/100))
-    max_text_width = width - 20
+    max_text_width = width - 500
     text_vertical_start = int(height * day_vertical_start_percent/100)
-    text_horizontal_start = 20
+    text_horizontal_start = 100
     text_image = Image.new("RGBA",(max_text_width,max_text_height))
     font_size = 1
     font_config = MindTetherCore.Font.DEFAULT_FONT
@@ -30,7 +30,7 @@ def add_day_to_background(background_image: Image, width:int, height:int, day: s
 
 def upload_image_to_s3(background_image: Image,width:int,height:int,day:str):
     image_buffer = BytesIO()
-    background_image.save(image_buffer,"JPEG")
+    background_image.save(image_buffer,"JPEG",dpi=(300,300))
     image_buffer.seek(0)
     s3 = boto3.client("s3")
     key = MindTetherCore.AssetMapper.get_background_image_key(day,width,height)
