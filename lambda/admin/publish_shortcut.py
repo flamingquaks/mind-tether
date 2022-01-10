@@ -5,6 +5,7 @@ import boto3
 
 stage = environ['STAGE']
 version_table = environ['VERSION_TABLE']
+param_base = f"/{stage}/mindtether/version/shortcut"
 
 def handler(event,context):
     if(event and event['body']):
@@ -23,10 +24,24 @@ def handler(event,context):
                     "shortcutLink": {"S": shortcut_link},
                     "releaseDate": { "S": release_date}
                 }
-            if body['makeMinVersion'] and body['makeMinVersion'] == True:
-                dynamo_item['isMinVersion'] = True
-            if body['makeLatestVersion'] and body['makeLatestVersion'] == True:
-                dynamo_item['makeLatestVersion'] = True
+            if "makeMinVersion" in body and body["makeMinVersion"] == True:
+                min_param = f"{param_base}/min"
+                ssm = boto3.client("ssm")
+                min_response = ssm.put_parameter(
+                    Name=min_param,
+                    Value=version,
+                    Overwrite=True
+                )
+                # If it has to be the min, it should also be the latest, regardless of input
+                body['makeLatestVersion'] = True
+            if "makeLatestVersion" in body and body['makeLatestVersion'] == True:
+                latest_param = f"{param_base}/latest"
+                ssm = boto3.client("ssm")
+                latest_response = ssm.put_parameter(
+                    Name=latest_param,
+                    Value=version,
+                    Overwrite=True
+                )
             
             dynamodb = boto3.client("dynamodb")
             dynamo_response = dynamodb.put_item(

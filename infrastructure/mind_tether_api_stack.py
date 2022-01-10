@@ -23,10 +23,6 @@ import json
 from constructs import Construct
 
 
-
-
-
-
 class MindTetherApiStack(Stack):
 
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
@@ -116,12 +112,22 @@ class MindTetherApiStack(Stack):
             )
         )
         
+        
+        
         publish_shortcut_lambda = _lambda.Function(
             self,
             "AdminPublishShortcut",
             code=_lambda.Code.from_asset(f"{project_build_base}/lambda/admin"),
             handler="publish_shortcut.handler",
             runtime=_lambda.Runtime.PYTHON_3_8
+        )
+        
+        publish_shortcut_lambda.add_to_role_policy(
+            iam.PolicyStatement(
+            actions=["ssm:PutParameter"],
+            resources=[f"arn:aws:ssm:*:{account_id}:parameter/{stage_name}/mindtether/version/min",
+                       f"arn:aws:ssm:*:{account_id}:parameter/{stage_name}/mindtether/version/latest"],
+            effect=iam.Effect.ALLOW)
         )
         
         publish_shortcut_lambda.add_environment("STAGE", stage_name)

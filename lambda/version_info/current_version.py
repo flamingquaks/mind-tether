@@ -15,10 +15,10 @@ def is_newer_version_available (user_version:str, remote_version:str):
 
 
 def lambda_handler(event,context):
-    if event and event['pathParameters'] and event['pathParameters']['app']:
+    if event and "pathParameters" in event and "app" in event['pathParameters']:
         app = event['pathParameters']['app']
         param_base = f"/{stage}/mindtether/version/{app}"
-        if event['pathParameters']['version']:
+        if "version" in event['pathParameters']:
             user_version = event['pathParameters']['version']
             update_check = True
         else:
