@@ -113,10 +113,15 @@ class MindTetherApiStack(Stack):
             effect=iam.Effect.ALLOW
         ))
         
+        
+        # Note: we are adding two resources. The user can pass just the app, the get version info
+        # If user also includes a version, the response will indicate if updates are available/required
         version_resource = api.root.add_resource("version")
         app_version_resource = version_resource.add_resource("{app}")
         app_version_integration = apigw.LambdaIntegration(version_info)
         app_version_resource.add_method("GET",app_version_integration)
+        app_version_with_check_resource = app_version_resource.add_resource("{version}")
+        app_version_with_check_resource.add_method("GET", app_version_integration)
         
         
         
