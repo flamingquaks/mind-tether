@@ -1,4 +1,5 @@
 from aws_cdk import (
+    CfnOutput,
     Duration,
     RemovalPolicy,
     Stack,
@@ -96,22 +97,76 @@ class MindTetherApiStack(Stack):
         
         account_id = Stack.of(self).account
         
+         ## ADMIN ENDPOINTS!
+        admin_root = api.root.add_resource("admin")
+        # This section requires an API key
+        api_key = api.add_api_key("AdminApikey", api_key_name="Admin Functions API Key")
+        CfnOutput(self,"AdminApiKeyOutput",value=api_key.key_id)
         
+        app_versions_table = dynamodb.Table(
+            self,
+            "AppVersionsTable",
+            partition_key=dynamodb.Attribute(
+                name="app",
+                type=dynamodb.AttributeType.STRING
+            ),
+            sort_key=dynamodb.Attribute(
+                name="releaseDate",
+                type=dynamodb.AttributeType.STRING
+            )
+        )
+        
+        publish_shortcut_lambda = _lambda.Function(
+            self,
+            "AdminPublishShortcut",
+            code=_lambda.Code.from_asset(f"{project_build_base}/lambda/admin"),
+            handler="publish_shortcut.handler",
+            runtime=_lambda.Runtime.PYTHON_3_8
+        )
+        
+        publish_shortcut_lambda.add_environment("STAGE", stage_name)
+        publish_shortcut_lambda.add_environment("VERSION_TABLE",app_versions_table.table_name)
+        
+        app_versions_table.grant_read_write_data(publish_shortcut_lambda)
+        
+        publish_shortcut_lambda_integration = apigw.LambdaIntegration(publish_shortcut_lambda)        
+        admin_publish_shortcut_resource = admin_root.add_resource("publish-shortcut")
+        admin_publish_shortcut_resource.add_method("POST", publish_shortcut_lambda_integration,api_key_required=True)
+        
+        ## End Admin 
+        
+        ## App version info
         
         version_info = _lambda.Function(
             self,
             "VersionInfo",
             code=_lambda.Code.from_asset(f"{project_build_base}/lambda/version_info"),
-            handler="app.lambda_handler",
+            handler="current_version.lambda_handler",
             runtime=_lambda.Runtime.PYTHON_3_8
         )
-        version_info.add_layers(mindtether_core)
-        version_info.add_environment("STAGE", stage_name)
-        version_info.add_to_role_policy(iam.PolicyStatement(
+        
+        get_version_params_policy = iam.PolicyStatement(
             actions=["ssm:GetParametersByPath"],
             resources=[f"arn:aws:ssm:*:{account_id}:parameter/{stage_name}/mindtether/version/*"],
-            effect=iam.Effect.ALLOW
-        ))
+            effect=iam.Effect.ALLOW)
+        
+        version_info.add_layers(mindtether_core)
+        version_info.add_environment("STAGE", stage_name)
+        version_info.add_to_role_policy(get_version_params_policy)
+        
+        
+        version_history = _lambda.Function(
+            self,
+            "VersionList",
+            code=_lambda.Code.from_asset(f"{project_build_base}/lambda/version_info"),
+            handler="list_versions.handler",
+            runtime=_lambda.Runtime.PYTHON_3_8
+        )
+        version_history.add_environment("STAGE",stage_name)
+        version_history.add_environment("VERSION_TABLE", app_versions_table.table_name)
+        app_versions_table.grant_read_data(version_history)
+        version_history.add_to_role_policy(get_version_params_policy)
+        
         
         
         # Note: we are adding two resources. The user can pass just the app, the get version info
@@ -123,6 +178,9 @@ class MindTetherApiStack(Stack):
         app_version_with_check_resource = app_version_resource.add_resource("{version}")
         app_version_with_check_resource.add_method("GET", app_version_integration)
         
+        app_version_history_integration = apigw.LambdaIntegration(version_history)
+        app_version_history_resource = app_version_resource.add_resource("changelog")
+        app_version_history_resource.add_method("GET",app_version_history_integration)
         
         
         short_url_generator = _lambda.Function(
@@ -356,8 +414,7 @@ class MindTetherApiStack(Stack):
 
         redirect_cloudfront_distribution.add_behavior("images/*",mindtether_image_assets_origin,viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS)        
         
-        
-    
+       
         apigw.Deployment(self,"deployment",api=api)
         # If these values are provided in the context, we assume that the domain name already exists and will import.
         # if stack_context and stack_context['api_config'] and route53_zone:
