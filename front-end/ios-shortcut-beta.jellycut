@@ -1,0 +1,81 @@
+import Shortcuts
+#Color: grape, #Icon: binoculars
+// Developed by flamingquaks - https://github.com/flamingquaks
+// Learn more at https://mindtether.app
+
+var api_host = "api.mindtether.app"
+var api_stage = "dev"
+var get_tether_endpoint = "get-tether"
+var shortcut_version = "1.0.0"
+var current_date += Current Date
+var version_endpoint = "version/shortcut"
+func isNewerVersion(app_version, remote_version){
+	splitText(text: app_version, separator: Custom, customSeparator: ".") >> app_version_parts
+	splitText(text: remote_version, separator: Custom, customSeparator: ".") >> remote_version_parts
+	getItemFromList(list: remote_version_parts, type: Item At Index, index: 1) >> remote_version_part_1
+	getItemFromList(list: app_version_parts, type: Item At Index, index: 1) >> app_version_part_1
+	if(remote_version_part_1.as(Number) > app_version_part_1.as(Number)) {
+		var true_val = "true"
+		return true_val.as(Boolean)
+	}
+	getItemFromList(list: remote_version_parts, type: Item At Index, index: 2) >> remote_version_part_2
+	getItemFromList(list: app_version_parts, type: Item At Index, index: 2) >> app_version_part_2
+	if(remote_version_part_2.as(Number) > app_version_part_2.as(Number)) {
+		var true_val = "true"
+		return true_val.as(Boolean)
+	}
+	getItemFromList(list: remote_version_parts, type: Item At Index, index: 3) >> remote_version_part_3
+	getItemFromList(list: app_version_parts, type: Item At Index, index: 3) >> app_version_part_3
+	if(remote_version_part_3.as(Number)) > app_version_part_3.as(Number)) {
+		var true_val = "true"
+		return true_val.as(Boolean)
+	}
+	var false_val = "false"
+	return false_val.as(Boolean)
+
+}
+//downloadURL(url: "https://${api_host}/${api_stage}/${version_endpoint}") >> version_response
+//getDictionaryFrom(input: version_response) >> version_info
+//valueFor(key:"min", dictionary:version_info) >> min_version
+//keysFrom(dictionary: version_info) >> keys
+//isNewerVersion(app_version: shortcut_version, remote_version: min_version) >> isNewerMin
+//if (isNewerMin == "true"){
+//	alert(alert:"SUCCESS")
+//	exit()
+//}else{
+//	alert(alert:"FAIL")
+//	exit()
+//}
+//valueFor(key:"latest", dictionary:version_info) >> latest_version
+formatDate(date: "${current_date}", dStyle: Custom, custom: "EEE,") >> day_format_string
+deviceDetails(detail: Screen Height) >> height
+var height_num = height.as(Number)
+math(input: height_num, operation: ×, operand: 3) >> math_native_height
+deviceDetails(detail: Screen Width) >> width
+var width_num = width.as(Number)
+math(input: width_num, operation: ×, operand: 3) >> math_native_width
+var native_height = math_native_height
+var native_width = math_native_width
+dictionary({"Sun,":"sunday","Mon,":"monday","Tue,":"tuesday","Wed,":"wednesday","Thu,":"thursday","Fri,":"friday","Sat,":"saturday"}) >> days_dict
+valueFor(key: "${day_format_string}", dictionary: days_dict)   >> day_string
+text(text: "https://${api_host}/${api_stage}/${get_tether_endpoint}?day=${day_string}&width=${native_width}&height=${native_height}") >> get_tether_url
+downloadURL(url: "${get_tether_url}") >> get_tether_response
+getDictionaryFrom(input: get_tether_response) >> get_tether_response_dict
+valueFor(key: "requestId", dictionary: get_tether_response_dict) >> request_id
+var max_repeats = 15
+var not_ready = "true"
+repeat(max_repeats) {
+	if (not_ready == "true")  {
+		wait(seconds: 3)
+		downloadURL(url: "https://${api_host}/${api_stage}/${get_tether_endpoint}/${request_id}", method:GET) >> current_tether_status_response
+		getDictionaryFrom(input: current_tether_status_response) >> current_tether_status_dict
+		valueFor(key: "status", dictionary: current_tether_status_dict) >> current_status
+		if (current_status == "COMPLETE") {
+			valueFor(key: "url", dictionary: current_tether_status_dict) >> download_url
+			not_ready = "false"
+		}
+	}
+}
+downloadURL(url: download_url) >> downloaded_image
+getImagesFrom(input: downloaded_image) >> tether_image
+changeWallpaper(image: tether_image, location: [Home Screen], preview: false)

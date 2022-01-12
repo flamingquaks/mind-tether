@@ -4,6 +4,7 @@ from uuid import uuid4
 from datetime import datetime
 import json
 from datetime import timedelta
+import MindTetherCore
 
 
 state_machine_arn = os.environ['STATE_MACHINCE_ARN']
@@ -21,6 +22,8 @@ def lambda_handler(event,context):
                 "day":day,
                 "width": width,
                 "height": height,
+                "background_base_key": MindTetherCore.AssetMapper.get_background_image_key(day,width,height),
+                "url": f"/{MindTetherCore.AssetMapper.get_background_image_key(day,width,height)}",
                 "requestId":request_id
             }
             event['requestId'] = request_id

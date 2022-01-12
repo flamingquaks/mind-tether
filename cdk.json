@@ -22,19 +22,7 @@
     "@aws-cdk-lib/aws-cloudfront:defaultSecurityPolicyTLSv1.2_2021": true,
     "python_version": "3.8",
     "short_url_host": "link.mindtether.rudy.fyi", 
-    "api_host": "api.mindtether.rudy.fyi",
-    "prod":{
-      "cert_arn": "/mindtether/prod/cert_arn",
-      "api_host":"api.mindtether.app",
-      "stage": "v1",
-      "short_url_host": "link.mindtether.app"
-    },
-    "dev":{
-      "cert_arn":"/mindtether/dev/cert_arn",
-      "api_host":"api.mindtether.app",
-      "stage": "dev",
-      "short_url_host": "dev.link.mindtether.app"
-    }
+    "api_host": "api.mindtether.rudy.fyi"
     
   }
 }

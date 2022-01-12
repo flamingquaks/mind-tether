@@ -10,15 +10,38 @@ import random
     #     pass
 
 
-_font_dir = path.join("/opt/%s" % (environ['ASSET_LAYER_NAME']),"fonts")
+
 class Font():
+    
     def __init__(self) -> None:
         pass
-    class THE_BOLD_FONT:
-        FILE = "%s/theboldfont.ttf" % (_font_dir)
+    
+    class FontDefinition:
+        def __init__(self) -> None:
+            pass
+        
+    class THE_BOLD_FONT(FontDefinition):
+        FILE = "theboldfont.ttf"
         NAME = "TheBoldFont"
     
     DEFAULT_FONT = THE_BOLD_FONT
+class AssetMapper():
+    def __init__(self) -> None:
+        pass
+    
+    def get_background_image_key(day: str, width:int, height:int, font:Font.FontDefinition = Font.DEFAULT_FONT):
+        """Returns the S3 key for the background image with day text
+
+        Args:
+            day (str): The day
+            width (int): screen width in pixels
+            height (int): screen height in pixels
+            font (Font, optional): Defaults to Font.DEFAULT_FONT
+
+        Returns:
+            str: The S3 Key for the background image with day text
+        """
+        return f"images/{width}x{height}/{day}@{font.NAME}@{width}x{height}.jpg"
     
     
 class Day():
@@ -58,7 +81,7 @@ class URLShortener:
     def __init__(self) -> None:
         pass
     
-    def shorten_url(long_url:str, short_url_bucket:str, short_url_host:str):
+    def shorten_url(long_url:str, short_url_bucket:str = None, short_url_host:str = None):
         """URLShortener.shorten_url
         
         This takes the long URL and generates a URL shortener link.
