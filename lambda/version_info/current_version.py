@@ -28,7 +28,7 @@ def lambda_handler(event,context):
         params = param_response['Parameters']
         version_data = {}
         i = 0
-        version_attributes = {"min":{"update_key": "requiredUpdate"},"latest":{"update_key": "optionalOptional"}}
+        version_attributes = {"min":{"update_key": "requiredUpdate"},"latest":{"update_key": "optionalUpdate"}}
         while i < len(params):
             param = params[i]
             attribute_name = param['Name'][param['Name'].rindex("/")+1:]
