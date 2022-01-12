@@ -10,7 +10,7 @@ def handler(event,context):
     if event and event['pathParameters'] and event['pathParameters']['app']:
         app = event['pathParameters']['app']
         dynamodb = boto3.resource("dynamodb")
-        app_table = dynamodb.Table(app)
+        app_table = dynamodb.Table(version_table)
         query_response = app_table.query(
             KeyConditionExpression=Key("app").eq(app)
         )

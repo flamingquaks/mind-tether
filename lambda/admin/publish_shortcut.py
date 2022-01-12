@@ -22,7 +22,7 @@ def handler(event,context):
             release_date = datetime.now()
             release_date_string = release_date.strftime("%m/%d/%Y, %H:%M:%S")
             dynamo_item = {
-                    'app':{'S':'shortcuts'},
+                    'app':{'S':'shortcut'},
                     'version': { 'S' : version },
                     "description": { "S" : description},
                     "shortcutId": {"S": shortcut_id},
