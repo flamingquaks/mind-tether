@@ -13,16 +13,20 @@ def handler(event,context):
         if not type(body) == dict:
             body = json.loads(body)
         if body.keys() >= {"version","description","shortcut_link"}:
+            if("https://www.icloud.com/shortcuts/" in body['shortcut_link']):
+                shortcut_id = body['shortcut_link'][body['shortcut_link'].rindex("/")+1:]
+            else:
+                shortcut_id = body['shortcut_link']
             version = body['version']
-            description = body['version']
-            shortcut_link = body['shortcut_link']
+            description = body['description']
             release_date = datetime.now()
+            release_date_string = release_date.strftime("%m/%d/%Y, %H:%M:%S")
             dynamo_item = {
                     'app':{'S':'shortcuts'},
                     'version': { 'S' : version },
                     "description": { "S" : description},
-                    "shortcutLink": {"S": shortcut_link},
-                    "releaseDate": { "S": release_date}
+                    "shortcutId": {"S": shortcut_id},
+                    "releaseDate": { "S": release_date_string}
                 }
             if "makeMinVersion" in body and body["makeMinVersion"] == True:
                 min_param = f"{param_base}/min"
@@ -48,7 +52,9 @@ def handler(event,context):
                 TableName=version_table,
                 Item=dynamo_item
             )
-            if not dynamo_response['Attributes']:
+            
+
+            if "ResponseMetadata" not in dynamo_response or ("ResponseMetadata" in dynamo_response and dynamo_response['ResponseMetadata']['HTTPStatusCode'] != 200):
                 raise Exception("ERROR Releasing Shortcut")
             else:
                 return {

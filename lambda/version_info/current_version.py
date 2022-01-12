@@ -28,15 +28,15 @@ def lambda_handler(event,context):
         params = param_response['Parameters']
         version_data = {}
         i = 0
-        version_attributes = {"min":{"update_key": "requiredUpdate"},"latest":{"update_key": "optionalOptional"}}
+        version_attributes = {"min":{"update_key": "requiredUpdate"},"latest":{"update_key": "optionalUpdate"}}
         while i < len(params):
             param = params[i]
             attribute_name = param['Name'][param['Name'].rindex("/")+1:]
             version_data[attribute_name] = param['Value']
             
-            if attribute_name and update_check:
-                if update_available := is_newer_version_available(user_version,param['Value']):
-                    version_data[version_attributes[attribute_name]['update_key']] = update_available
+            if attribute_name in ["min","latest"] and update_check:
+                update_available = is_newer_version_available(user_version,param['Value'])
+                version_data[version_attributes[attribute_name]['update_key']] = update_available
             i += 1
         return {
             "statusCode": 200,
