@@ -126,7 +126,8 @@ class MindTetherApiStack(Stack):
             iam.PolicyStatement(
             actions=["ssm:PutParameter"],
             resources=[f"arn:aws:ssm:*:{account_id}:parameter/{stage_name}/mindtether/version/min",
-                       f"arn:aws:ssm:*:{account_id}:parameter/{stage_name}/mindtether/version/latest"],
+                       f"arn:aws:ssm:*:{account_id}:parameter/{stage_name}/mindtether/version/latest",
+                       f"arn:aws:ssm:*:{account_id}:parameter/{stage_name}/mindtether/shortcut-url"],
             effect=iam.Effect.ALLOW)
         )
         
@@ -170,7 +171,10 @@ class MindTetherApiStack(Stack):
         )
         version_history.add_environment("STAGE",stage_name)
         version_history.add_environment("VERSION_TABLE", app_versions_table.table_name)
-        app_versions_table.grant_read_data(version_history)
+        version_history.add_to_role_policy( iam.PolicyStatement(
+            actions=["dynamodb:Query"],
+            resources=[app_versions_table.table_arn],
+            effect=iam.Effect.ALLOW))
         version_history.add_to_role_policy(get_version_params_policy)
         
         
