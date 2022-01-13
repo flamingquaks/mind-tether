@@ -5,8 +5,11 @@ Many individuals in many stages of life struggle to stay grounded to the day to 
 
 Mind Tether is designed to provide users with visual indicators in convienient locations to help mentally tether someone back to what the now is.
 
+Currrently, there is no actual app. Mind Tether runs as a Siri Shortcut. Once you install the shortcut, you can automate how frequently to run it. The current recommendation is daily (in the wee morning).
 
-The current design, v1.0.0, takes advantage of the programability of iPhones through Shortcuts. Currently, you can download the latest stable Mind Tether Siri Shortcut, head over to our [RoutineHub](https://routinehub.co/shortcut/10648/){:target="_blank"}
+[Click Here](https://www.icloud.com/shortcuts/bc76f16a37ea43aa89018dfd74700375) to get the latest Apple Shortcut
+---
+Once the shortcut is installed, it will check for future updates and let you know when a newer version is available.
 
 ---
 ## Screenshots!
