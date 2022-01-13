@@ -96,7 +96,7 @@ class MindTetherApiStack(Stack):
          ## ADMIN ENDPOINTS!
         admin_root = api.root.add_resource("admin")
         # This section requires an API key
-        api_key = api.add_api_key("AdminApikey", api_key_name="Admin Functions API Key")
+        api_key = api.add_api_key("AdminApikey")
         CfnOutput(self,"AdminApiKeyOutput",value=api_key.key_id)
         
         app_versions_table = dynamodb.Table(
